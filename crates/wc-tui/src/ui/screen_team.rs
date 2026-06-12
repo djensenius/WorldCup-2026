@@ -149,9 +149,16 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> bool {
 /// Number of fixtures currently available for the open team (0 if none).
 fn fixtures_len(app: &App) -> usize {
     match (app.team(), app.scoreboard().state().value()) {
-        (Some(nav), Some(matches)) => team_fixtures(matches, &nav.team_id, &nav.name).len(),
+        (Some(nav), Some(matches)) => team_fixtures_count(matches, &nav.team_id, &nav.name),
         _ => 0,
     }
+}
+
+fn team_fixtures_count(matches: &[Match], id: &str, name: &str) -> usize {
+    matches
+        .iter()
+        .filter(|m| team_is_home(m, id, name).is_some())
+        .count()
 }
 
 /// The panel title: an optional favourite star, the team name, and its code.
