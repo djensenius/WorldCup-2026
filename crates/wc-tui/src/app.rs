@@ -70,6 +70,9 @@ pub struct TeamNav {
 pub struct ScreenState {
     /// Selected row on the Matches screen.
     pub matches_selected: usize,
+    /// Whether [`Self::matches_selected`] has been seeded to the current/next
+    /// game yet. Done once, the first time scoreboard data is available.
+    pub matches_selected_initialized: bool,
     /// Whether the Matches screen is filtered to favourites only.
     pub matches_favorites_only: bool,
     /// Selected row on the Live screen.
@@ -537,6 +540,18 @@ impl App {
             && let Some(matches) = self.scoreboard.state().value()
         {
             self.cache.store(CACHE_SCOREBOARD, matches);
+        }
+        // Once the schedule is available, default the Matches selection to the
+        // current (or next) game rather than the first fixture of the tournament.
+        if !self.ui_state.matches_selected_initialized
+            && let Some(index) = self
+                .scoreboard
+                .state()
+                .value()
+                .map(|matches| ui::screen_matches::default_selected_index(self, matches))
+        {
+            self.ui_state.matches_selected = index;
+            self.ui_state.matches_selected_initialized = true;
         }
         if matches!(self.standings.drain(), Some(Ok(())))
             && let Some(groups) = self.standings.state().value()

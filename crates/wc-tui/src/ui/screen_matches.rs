@@ -11,6 +11,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Wrap};
+use time::OffsetDateTime;
 use wc_data::domain::{Match, MatchStatus, Stage, Team};
 
 use crate::app::App;
@@ -119,6 +120,27 @@ fn visible_matches<'a>(app: &App, matches: &'a [Match]) -> Vec<&'a Match> {
         )
     });
     rows
+}
+
+/// The row (into the sorted, currently-visible matches) to select by default:
+/// the first in-play game, otherwise the next upcoming game, otherwise the last
+/// played match once the tournament is over.
+#[must_use]
+pub fn default_selected_index(app: &App, matches: &[Match]) -> usize {
+    let rows = visible_matches(app, matches);
+    current_or_next_index(&rows, OffsetDateTime::now_utc())
+}
+
+fn current_or_next_index(rows: &[&Match], now: OffsetDateTime) -> usize {
+    if rows.is_empty() {
+        return 0;
+    }
+    if let Some(index) = rows.iter().position(|m| m.status.is_live()) {
+        return index;
+    }
+    rows.iter()
+        .position(|m| m.kickoff >= now)
+        .unwrap_or(rows.len() - 1)
 }
 
 fn schedule_lines(
@@ -347,5 +369,54 @@ mod tests {
             }),
         );
         assert_eq!(score_text(&m), "2-1");
+    }
+
+    fn fixture_at(status: MatchStatus, ts: i64) -> Match {
+        let mut m = fixture(status, None);
+        m.id = format!("m{ts}");
+        m.kickoff = OffsetDateTime::from_unix_timestamp(ts).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+        m
+    }
+
+    #[test]
+    fn default_selection_prefers_a_live_game() {
+        let now = OffsetDateTime::from_unix_timestamp(500).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+        let rows = [
+            fixture_at(MatchStatus::FullTime, 100),
+            fixture_at(
+                MatchStatus::Live {
+                    minute: Some(30),
+                    detail: None,
+                },
+                450,
+            ),
+            fixture_at(MatchStatus::Scheduled, 900),
+        ];
+        let refs = rows.iter().collect::<Vec<_>>();
+        assert_eq!(current_or_next_index(&refs, now), 1);
+    }
+
+    #[test]
+    fn default_selection_falls_back_to_next_upcoming() {
+        let now = OffsetDateTime::from_unix_timestamp(500).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+        let rows = [
+            fixture_at(MatchStatus::FullTime, 100),
+            fixture_at(MatchStatus::FullTime, 200),
+            fixture_at(MatchStatus::Scheduled, 600),
+            fixture_at(MatchStatus::Scheduled, 900),
+        ];
+        let refs = rows.iter().collect::<Vec<_>>();
+        assert_eq!(current_or_next_index(&refs, now), 2);
+    }
+
+    #[test]
+    fn default_selection_uses_last_match_when_tournament_is_over() {
+        let now = OffsetDateTime::from_unix_timestamp(5000).unwrap_or(OffsetDateTime::UNIX_EPOCH);
+        let rows = [
+            fixture_at(MatchStatus::FullTime, 100),
+            fixture_at(MatchStatus::FullTime, 200),
+        ];
+        let refs = rows.iter().collect::<Vec<_>>();
+        assert_eq!(current_or_next_index(&refs, now), 1);
     }
 }

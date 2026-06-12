@@ -136,7 +136,15 @@ fn board_lines(
             if index == selected {
                 selected_line = all.len();
             }
-            all.push(live_row_line(m, index == selected, theme, icons));
+            let (home_fav, away_fav) = favourites(app, m);
+            all.push(live_row_line(
+                m,
+                index == selected,
+                theme,
+                icons,
+                home_fav,
+                away_fav,
+            ));
         }
     }
 
@@ -152,7 +160,16 @@ fn board_lines(
             }
             let when =
                 timefmt::kickoff_day_time(m.kickoff, &app.config().ui.timezone, app.local_offset());
-            all.push(upcoming_row_line(m, index == selected, theme, &when));
+            let (home_fav, away_fav) = favourites(app, m);
+            all.push(upcoming_row_line(
+                m,
+                index == selected,
+                theme,
+                icons,
+                &when,
+                home_fav,
+                away_fav,
+            ));
         }
     }
 
@@ -168,24 +185,69 @@ fn section_header(title: &str, theme: &Theme) -> Line<'static> {
     ))
 }
 
-fn live_row_line(m: &Match, selected: bool, theme: &Theme, icons: Icons) -> Line<'static> {
+fn favourites(app: &App, m: &Match) -> (bool, bool) {
+    (
+        app.config().is_favorite(&m.home.name, &m.home.abbreviation),
+        app.config().is_favorite(&m.away.name, &m.away.abbreviation),
+    )
+}
+
+fn label_style(base: Style, fav: bool, theme: &Theme) -> Style {
+    if fav {
+        base.fg(theme.accent).add_modifier(Modifier::BOLD)
+    } else {
+        base
+    }
+}
+
+fn row_marker(selected: bool, favourite: bool, icons: Icons, theme: &Theme) -> (String, Style) {
+    if selected {
+        (
+            "›".to_owned(),
+            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
+        )
+    } else if favourite {
+        (
+            icons.star().to_owned(),
+            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
+        )
+    } else {
+        (" ".to_owned(), Style::new().fg(theme.dim))
+    }
+}
+
+fn live_row_line(
+    m: &Match,
+    selected: bool,
+    theme: &Theme,
+    icons: Icons,
+    home_fav: bool,
+    away_fav: bool,
+) -> Line<'static> {
     let row_style = if selected {
         Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
     } else {
         Style::new().fg(theme.fg)
     };
-    let mark = if selected { "›" } else { " " };
+    let (mark, mark_style) = row_marker(selected, home_fav || away_fav, icons, theme);
     Line::from(vec![
+        Span::styled(format!("{mark} "), mark_style),
         Span::styled(
-            format!("{mark} {} ", icons.live()),
+            format!("{} ", icons.live()),
             Style::new().fg(theme.warn).add_modifier(Modifier::BOLD),
         ),
-        Span::styled(format!("{:>6}", team_label(&m.home)), row_style),
+        Span::styled(
+            format!("{:>6}", team_label(&m.home)),
+            label_style(row_style, home_fav, theme),
+        ),
         Span::styled(
             format!(" {:^7} ", live_score(m.score)),
             row_style.fg(theme.warn).add_modifier(Modifier::BOLD),
         ),
-        Span::styled(format!("{:<6}", team_label(&m.away)), row_style),
+        Span::styled(
+            format!("{:<6}", team_label(&m.away)),
+            label_style(row_style, away_fav, theme),
+        ),
         Span::styled(
             format!("  {}", live_clock(&m.status)),
             Style::new().fg(theme.warn).add_modifier(Modifier::BOLD),
@@ -193,26 +255,33 @@ fn live_row_line(m: &Match, selected: bool, theme: &Theme, icons: Icons) -> Line
     ])
 }
 
-fn upcoming_row_line(m: &Match, selected: bool, theme: &Theme, when: &str) -> Line<'static> {
+fn upcoming_row_line(
+    m: &Match,
+    selected: bool,
+    theme: &Theme,
+    icons: Icons,
+    when: &str,
+    home_fav: bool,
+    away_fav: bool,
+) -> Line<'static> {
     let row_style = if selected {
         Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
     } else {
         Style::new().fg(theme.fg)
     };
-    let (mark, mark_style) = if selected {
-        (
-            "›",
-            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
-        )
-    } else {
-        (" ", Style::new().fg(theme.dim))
-    };
+    let (mark, mark_style) = row_marker(selected, home_fav || away_fav, icons, theme);
     Line::from(vec![
         Span::styled(format!("{mark} "), mark_style),
         Span::styled(format!("{when:<12} "), Style::new().fg(theme.dim)),
-        Span::styled(format!("{:>6}", team_label(&m.home)), row_style),
+        Span::styled(
+            format!("{:>6}", team_label(&m.home)),
+            label_style(row_style, home_fav, theme),
+        ),
         Span::styled(" vs ", Style::new().fg(theme.dim)),
-        Span::styled(format!("{:<6}", team_label(&m.away)), row_style),
+        Span::styled(
+            format!("{:<6}", team_label(&m.away)),
+            label_style(row_style, away_fav, theme),
+        ),
         Span::styled(format!("  {}", context_tag(m)), Style::new().fg(theme.dim)),
     ])
 }

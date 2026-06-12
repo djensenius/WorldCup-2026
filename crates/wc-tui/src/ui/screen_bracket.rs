@@ -13,6 +13,7 @@ use wc_data::domain::{Bracket, BracketRound, Match, Score, Stage, Team};
 
 use crate::app::App;
 use crate::data::Remote;
+use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
 
@@ -23,6 +24,8 @@ const CELL_HEIGHT: u16 = 3;
 struct BracketCell {
     home: String,
     away: String,
+    home_fav: bool,
+    away_fav: bool,
     selected: bool,
 }
 
@@ -72,6 +75,7 @@ fn render_bracket(app: &App, frame: &mut Frame, area: Rect, bracket: &Bracket) {
         let is_selected_round = round_index == selected_round;
         let match_index = if is_selected_round { selected_match } else { 0 };
         let lines = bracket_column_lines(
+            app,
             &bracket.rounds[round_index],
             match_index,
             is_selected_round,
@@ -93,6 +97,7 @@ fn horizontal_chunks(area: Rect, count: usize) -> Vec<Rect> {
 }
 
 fn bracket_column_lines(
+    app: &App,
     round: &BracketRound,
     selected_match: usize,
     selected_round: bool,
@@ -120,6 +125,7 @@ fn bracket_column_lines(
     }
     for index in visible {
         let cell = bracket_cell(
+            app,
             &round.matches[index],
             selected_round && index == selected_match,
         );
@@ -179,28 +185,64 @@ fn selected_match_index(bracket: &Bracket, round_index: usize, requested: usize)
     })
 }
 
-fn bracket_cell(match_: &Match, selected: bool) -> BracketCell {
+fn bracket_cell(app: &App, match_: &Match, selected: bool) -> BracketCell {
+    let icons = app.icons();
+    let home_fav = app
+        .config()
+        .is_favorite(&match_.home.name, &match_.home.abbreviation);
+    let away_fav = app
+        .config()
+        .is_favorite(&match_.away.name, &match_.away.abbreviation);
     BracketCell {
-        home: team_line(&match_.home, Side::Home, match_.score),
-        away: team_line(&match_.away, Side::Away, match_.score),
+        home: decorate(
+            team_line(&match_.home, Side::Home, match_.score),
+            home_fav,
+            icons,
+        ),
+        away: decorate(
+            team_line(&match_.away, Side::Away, match_.score),
+            away_fav,
+            icons,
+        ),
+        home_fav,
+        away_fav,
         selected,
+    }
+}
+
+fn decorate(label: String, favourite: bool, icons: Icons) -> String {
+    if favourite {
+        format!("{} {label}", icons.star())
+    } else {
+        label
     }
 }
 
 impl BracketCell {
     fn into_lines(self, theme: &Theme) -> Vec<Line<'static>> {
-        let style = if self.selected {
-            Style::new()
-                .fg(theme.accent)
-                .bg(theme.bg)
-                .add_modifier(Modifier::BOLD)
-        } else {
-            Style::new().fg(theme.fg)
-        };
         vec![
-            Line::from(Span::styled(self.home, style)),
-            Line::from(Span::styled(self.away, style)),
+            Line::from(Span::styled(
+                self.home,
+                cell_style(self.selected, self.home_fav, theme),
+            )),
+            Line::from(Span::styled(
+                self.away,
+                cell_style(self.selected, self.away_fav, theme),
+            )),
         ]
+    }
+}
+
+fn cell_style(selected: bool, favourite: bool, theme: &Theme) -> Style {
+    if selected {
+        Style::new()
+            .fg(theme.accent)
+            .bg(theme.bg)
+            .add_modifier(Modifier::BOLD)
+    } else if favourite {
+        Style::new().fg(theme.accent).add_modifier(Modifier::BOLD)
+    } else {
+        Style::new().fg(theme.fg)
     }
 }
 
@@ -346,7 +388,13 @@ mod tests {
             Team::placeholder("Third Group C/D/E"),
         );
 
-        let cell = bracket_cell(&match_, true);
+        let cell = BracketCell {
+            home: team_line(&match_.home, Side::Home, match_.score),
+            away: team_line(&match_.away, Side::Away, match_.score),
+            home_fav: false,
+            away_fav: false,
+            selected: true,
+        };
 
         assert_eq!(cell.home, "Winner Group A");
         assert_eq!(cell.away, "Third Group C/D/E");

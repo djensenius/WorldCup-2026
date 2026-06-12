@@ -18,7 +18,18 @@ global bindings (active everywhere) and per-screen bindings.
 The screens, in tab order, are **Matches**, **Live**, **Standings**, and
 **Bracket**.
 
+## Favourite teams
+
+Press `*` on a selected team in **Standings** or in the **Team** view to mark it
+as a favourite (press again to unmark). Favourites persist to your config and
+are highlighted with a star (★) and the accent colour everywhere they appear —
+Matches, Live, Standings, the Team view, and the Bracket. On Matches, `f`
+filters the list down to fixtures involving a favourite.
+
 ## Matches
+
+Opens focused on the current game (or the next kickoff when nothing is live).
+Favourite teams are marked with a star (★) and highlighted in the accent colour.
 
 | Key                | Action                              |
 | ------------------ | ----------------------------------- |

@@ -9,7 +9,8 @@ Rust and [ratatui](https://ratatui.rs).
 ## Features
 
 - **Matches** — fixtures by day and stage, status badges, local-timezone
-  kickoff times, favourite-team filtering.
+  kickoff times, and favourite-team filtering; opens on the current (or next)
+  game.
 - **Live** — a scoreboard of in-play matches followed by the soonest upcoming
   fixtures, refreshing on a fast cadence.
 - **Standings** — the 12 group tables (A–L) with qualification highlighting,
@@ -18,8 +19,9 @@ Rust and [ratatui](https://ratatui.rs).
   full fixture list.
 - **Bracket** — the knockout tree (Round of 32 → Final).
 - **Match detail** — goals, cards, substitutions, lineups, and team stats.
-- **Favourite teams** — star teams with `*` from Standings or the team view to
-  highlight and filter them.
+- **Favourite teams** — star teams with `*` from Standings or the team view;
+  favourites are highlighted (★) across every screen and can filter the Matches
+  list.
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), colour themes, an offline cache, and mouse
   support.
