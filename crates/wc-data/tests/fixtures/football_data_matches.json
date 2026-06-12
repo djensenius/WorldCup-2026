@@ -1,0 +1,6 @@
+{
+  "matches": [
+    {"id": 1001, "utcDate": "2026-06-12T19:00:00Z", "status": "SCHEDULED", "matchday": 1, "stage": "GROUP_STAGE", "group": "GROUP_B", "homeTeam": {"id": 206, "name": "Canada", "tla": "CAN", "crest": "https://example.test/can.png"}, "awayTeam": {"id": 452, "name": "Bosnia-Herzegovina", "tla": "BIH", "crest": null}, "score": {"winner": null, "full_time": {"home": null, "away": null}, "regular_time": null, "penalties": null}, "lineups": []},
+    {"id": 2001, "utcDate": "2026-06-29T19:00:00Z", "status": "FINISHED", "matchday": null, "stage": "LAST_32", "group": null, "homeTeam": {"id": 1, "name": "Winner Group A", "tla": "1A", "crest": null}, "awayTeam": {"id": 2, "name": "Runner-up Group B", "tla": "2B", "crest": null}, "score": {"winner": "HOME_TEAM", "full_time": {"home": 2, "away": 1}, "regular_time": {"home": 2, "away": 1}, "penalties": null}, "lineups": []}
+  ]
+}

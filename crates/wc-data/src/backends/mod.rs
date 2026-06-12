@@ -5,6 +5,7 @@
 //! Backends are selected at runtime via [`crate::provider::Provider`].
 
 mod api_football;
+mod common;
 mod espn;
 mod football_data;
 

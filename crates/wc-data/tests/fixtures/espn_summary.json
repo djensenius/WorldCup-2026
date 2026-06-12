@@ -1,0 +1,1933 @@
+{
+  "header": {
+    "id": "760416",
+    "uid": "s:600~l:606~e:760416",
+    "season": {
+      "year": 2026,
+      "current": true,
+      "type": 13802,
+      "name": "2026 FIFA World Cup, Group Stage"
+    },
+    "timeValid": true,
+    "competitions": [
+      {
+        "id": "760416",
+        "uid": "s:600~l:606~e:760416~c:760416",
+        "date": "2026-06-12T19:00Z",
+        "neutralSite": false,
+        "conferenceCompetition": false,
+        "boxscoreAvailable": true,
+        "commentaryAvailable": true,
+        "liveAvailable": true,
+        "onWatchESPN": false,
+        "recent": true,
+        "wallclockAvailable": true,
+        "boxscoreSource": "full",
+        "playByPlaySource": "full",
+        "competitors": [
+          {
+            "id": "206",
+            "uid": "s:600~t:206",
+            "order": 0,
+            "homeAway": "home",
+            "winner": false,
+            "team": {
+              "id": "206",
+              "guid": "c09eeeeb-7c2d-23f9-1bbf-153ff7e59905",
+              "uid": "s:600~t:206",
+              "location": "Canada",
+              "name": "Canada",
+              "abbreviation": "CAN",
+              "displayName": "Canada",
+              "shortDisplayName": "Canada",
+              "color": "ed2224",
+              "alternateColor": "ffffff",
+              "logos": [
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/countries/500/can.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "default"
+                  ],
+                  "lastUpdated": "2023-10-25T16:19Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/countries/500-dark/can.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "dark"
+                  ],
+                  "lastUpdated": "2023-10-25T16:22Z"
+                }
+              ],
+              "groups": {
+                "name": "Group B"
+              },
+              "links": [
+                {
+                  "rel": [
+                    "clubhouse",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/soccer/team/_/id/206/canada",
+                  "text": "Clubhouse"
+                }
+              ],
+              "form": "DWDDW"
+            },
+            "score": "1",
+            "linescores": [
+              {
+                "displayValue": "0"
+              },
+              {
+                "displayValue": "1"
+              }
+            ],
+            "record": [
+              {
+                "type": "total",
+                "summary": "0-0-0",
+                "displayValue": "0-0-0"
+              },
+              {
+                "type": "points",
+                "summary": "0",
+                "displayValue": "0"
+              }
+            ],
+            "groups": {
+              "abbreviation": "Group B"
+            },
+            "possession": false
+          },
+          {
+            "id": "452",
+            "uid": "s:600~t:452",
+            "order": 1,
+            "homeAway": "away",
+            "winner": false,
+            "team": {
+              "id": "452",
+              "guid": "abbea89c-2330-e78a-7e12-11490d6d7b49",
+              "uid": "s:600~t:452",
+              "location": "Bosnia-Herzegovina",
+              "name": "Bosnia-Herzegovina",
+              "abbreviation": "BIH",
+              "displayName": "Bosnia-Herzegovina",
+              "shortDisplayName": "Bosnia-Herz",
+              "color": "112855",
+              "alternateColor": "ffffff",
+              "logos": [
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/countries/500/bih.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "default"
+                  ],
+                  "lastUpdated": "2018-06-05T12:06Z"
+                },
+                {
+                  "href": "https://a.espncdn.com/i/teamlogos/countries/500-dark/bih.png",
+                  "width": 500,
+                  "height": 500,
+                  "alt": "",
+                  "rel": [
+                    "full",
+                    "dark"
+                  ],
+                  "lastUpdated": "2018-06-05T12:06Z"
+                }
+              ],
+              "groups": {
+                "name": "Group B"
+              },
+              "links": [
+                {
+                  "rel": [
+                    "clubhouse",
+                    "desktop",
+                    "team"
+                  ],
+                  "href": "https://www.espn.com/soccer/team/_/id/452/bosnia-herzegovina",
+                  "text": "Clubhouse"
+                }
+              ],
+              "form": "DDWWD"
+            },
+            "score": "1",
+            "linescores": [
+              {
+                "displayValue": "1"
+              },
+              {
+                "displayValue": "0"
+              }
+            ],
+            "record": [
+              {
+                "type": "total",
+                "summary": "0-0-0",
+                "displayValue": "0-0-0"
+              },
+              {
+                "type": "points",
+                "summary": "0",
+                "displayValue": "0"
+              }
+            ],
+            "groups": {
+              "abbreviation": "Group B"
+            },
+            "possession": false
+          }
+        ],
+        "notes": [],
+        "status": {
+          "displayClock": "80'",
+          "period": 2,
+          "type": {
+            "id": "26",
+            "name": "STATUS_SECOND_HALF",
+            "state": "in",
+            "completed": false,
+            "description": "Second Half",
+            "detail": "80'",
+            "shortDetail": "80'",
+            "statusPrimary": "80'"
+          },
+          "displayPeriod": "2nd"
+        },
+        "broadcasts": [
+          {
+            "type": {
+              "id": "1",
+              "shortName": "TV"
+            },
+            "market": {},
+            "media": {
+              "shortName": "FOX"
+            },
+            "lang": "en",
+            "region": "us",
+            "isNational": false
+          },
+          {
+            "type": {
+              "id": "1",
+              "shortName": "TV"
+            },
+            "market": {},
+            "media": {
+              "shortName": "Tele"
+            },
+            "lang": "en",
+            "region": "us",
+            "isNational": false
+          },
+          {
+            "type": {
+              "id": "4",
+              "shortName": "STREAMING"
+            },
+            "market": {},
+            "media": {
+              "shortName": "Peacock"
+            },
+            "lang": "en",
+            "region": "us",
+            "isNational": false
+          }
+        ],
+        "details": [
+          {
+            "clock": {
+              "value": 1228.0,
+              "displayValue": "21'"
+            },
+            "scoringPlay": true,
+            "team": {
+              "id": "452",
+              "uid": "s:600~t:452",
+              "location": "Bosnia-Herzegovina",
+              "name": "Bosnia-Herzegovina",
+              "abbreviation": "BIH",
+              "displayName": "Bosnia-Herzegovina"
+            },
+            "participants": [
+              {
+                "athlete": {
+                  "id": "305118",
+                  "displayName": "Jovo Lukic",
+                  "shortName": "J. Lukic",
+                  "links": [
+                    {
+                      "language": "en-US",
+                      "rel": [
+                        "playercard",
+                        "desktop",
+                        "athlete"
+                      ],
+                      "href": "https://www.espn.com/soccer/player/_/id/305118/jovo-lukic",
+                      "text": "Player Card",
+                      "shortText": "Player Card"
+                    }
+                  ]
+                }
+              },
+              {
+                "athlete": {
+                  "id": "170553",
+                  "displayName": "Sead Kolasinac",
+                  "shortName": "S. Kolasinac",
+                  "links": [
+                    {
+                      "language": "en-US",
+                      "rel": [
+                        "playercard",
+                        "desktop",
+                        "athlete"
+                      ],
+                      "href": "https://www.espn.com/soccer/player/_/id/170553/sead-kolasinac",
+                      "text": "Player Card",
+                      "shortText": "Player Card"
+                    }
+                  ]
+                }
+              }
+            ],
+            "addedClock": {
+              "value": 0.0,
+              "displayValue": ""
+            },
+            "redCard": false,
+            "penaltyKick": false,
+            "ownGoal": false
+          },
+          {
+            "clock": {
+              "value": 4679.0,
+              "displayValue": "78'"
+            },
+            "scoringPlay": true,
+            "team": {
+              "id": "206",
+              "uid": "s:600~t:206",
+              "location": "Canada",
+              "name": "Canada",
+              "abbreviation": "CAN",
+              "displayName": "Canada"
+            },
+            "participants": [
+              {
+                "athlete": {
+                  "id": "205024",
+                  "displayName": "Cyle Larin",
+                  "shortName": "C. Larin",
+                  "links": [
+                    {
+                      "language": "en-US",
+                      "rel": [
+                        "playercard",
+                        "desktop",
+                        "athlete"
+                      ],
+                      "href": "https://www.espn.com/soccer/player/_/id/205024/cyle-larin",
+                      "text": "Player Card",
+                      "shortText": "Player Card"
+                    }
+                  ]
+                }
+              },
+              {
+                "athlete": {
+                  "id": "318522",
+                  "displayName": "Promise David",
+                  "shortName": "P. David",
+                  "links": [
+                    {
+                      "language": "en-US",
+                      "rel": [
+                        "playercard",
+                        "desktop",
+                        "athlete"
+                      ],
+                      "href": "https://www.espn.com/soccer/player/_/id/318522/promise-david",
+                      "text": "Player Card",
+                      "shortText": "Player Card"
+                    }
+                  ]
+                }
+              }
+            ],
+            "addedClock": {
+              "value": 0.0,
+              "displayValue": ""
+            },
+            "redCard": false,
+            "penaltyKick": false,
+            "ownGoal": false
+          }
+        ],
+        "groups": {
+          "id": "2",
+          "name": "Group 2",
+          "abbreviation": "Group 2"
+        },
+        "isFinal": false,
+        "isThirdPlace": false,
+        "altGameNote": "FIFA World Cup, Group B",
+        "boxscoreMinutes": false,
+        "shotMapAvailable": true
+      }
+    ],
+    "links": [
+      {
+        "rel": [
+          "live",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/match/_/gameId/760416",
+        "text": "Gamecast",
+        "shortText": "Live",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "stats",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/matchstats/_/gameId/760416",
+        "text": "Statistics",
+        "shortText": "Statistics",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "commentary",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/commentary/_/gameId/760416",
+        "text": "Commentary",
+        "shortText": "Commentary",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "lineups",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/lineups/_/gameId/760416",
+        "text": "Line-Ups",
+        "shortText": "Line-Ups",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "videos",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/video/_/gameId/760416",
+        "text": "Videos",
+        "shortText": "Videos",
+        "isExternal": false,
+        "isPremium": false
+      }
+    ],
+    "league": {
+      "id": "606",
+      "uid": "s:600~l:606",
+      "name": "FIFA World Cup",
+      "abbreviation": "FIFA World Cup",
+      "shortName": "FIFA World Cup",
+      "midsizeName": "FIFA.WORLD",
+      "slug": "fifa.world",
+      "isTournament": true,
+      "links": [
+        {
+          "rel": [
+            "index",
+            "desktop",
+            "league"
+          ],
+          "href": "https://www.espn.com/soccer/worldcup/",
+          "text": "Index"
+        },
+        {
+          "rel": [
+            "index",
+            "sportscenter",
+            "app",
+            "league"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606",
+          "text": "Index"
+        },
+        {
+          "rel": [
+            "schedule",
+            "desktop",
+            "league"
+          ],
+          "href": "https://www.espn.com/soccer/schedule/_/league/fifa.world",
+          "text": "Schedule"
+        },
+        {
+          "rel": [
+            "schedule",
+            "sportscenter",
+            "app",
+            "league"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606&section=scores",
+          "text": "Schedule"
+        },
+        {
+          "rel": [
+            "standings",
+            "desktop",
+            "league"
+          ],
+          "href": "https://www.espn.com/soccer/table/_/league/fifa.world",
+          "text": "Standings"
+        },
+        {
+          "rel": [
+            "standings",
+            "sportscenter",
+            "app",
+            "league"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606&section=standings",
+          "text": "Standings"
+        },
+        {
+          "rel": [
+            "scores",
+            "desktop",
+            "league"
+          ],
+          "href": "https://www.espn.com/soccer/scoreboard/_/league/fifa.world",
+          "text": "Scores"
+        },
+        {
+          "rel": [
+            "scores",
+            "sportscenter",
+            "app",
+            "league"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606&section=scores",
+          "text": "Scores"
+        },
+        {
+          "rel": [
+            "stats",
+            "desktop",
+            "league"
+          ],
+          "href": "https://www.espn.com/soccer/stats/_/league/fifa.world",
+          "text": "Stats"
+        },
+        {
+          "rel": [
+            "stats",
+            "sportscenter",
+            "app",
+            "league"
+          ],
+          "href": "sportscenter://x-callback-url/showClubhouse?uid=s:600~l:606&section=stats",
+          "text": "Stats"
+        },
+        {
+          "rel": [
+            "teams",
+            "desktop",
+            "league"
+          ],
+          "href": "https://www.espn.com/soccer/teams/_/league/fifa.world",
+          "text": "Teams"
+        }
+      ],
+      "logos": [
+        {
+          "href": "https://a.espncdn.com/i/leaguelogos/soccer/500/4.png",
+          "rel": [
+            "full",
+            "default"
+          ]
+        },
+        {
+          "href": "https://a.espncdn.com/i/leaguelogos/soccer/500-dark/4.png",
+          "rel": [
+            "full",
+            "dark"
+          ]
+        }
+      ]
+    },
+    "linksv4": [
+      {
+        "rel": [
+          "summary",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/match/_/gameId/760416",
+        "text": "Gamecast",
+        "shortText": "Summary",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "teamstats",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/team-stats/_/gameId/760416",
+        "text": "Team Stats",
+        "shortText": "Team Stats",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "playerstats",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/player-stats/_/gameId/760416",
+        "text": "Player Stats",
+        "shortText": "Player Stats",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "commentary",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/commentary/_/gameId/760416",
+        "text": "Commentary",
+        "shortText": "Commentary",
+        "isExternal": false,
+        "isPremium": false
+      },
+      {
+        "rel": [
+          "videos",
+          "desktop",
+          "event"
+        ],
+        "href": "https://www.espn.com/soccer/video/_/gameId/760416",
+        "text": "Videos",
+        "shortText": "Videos",
+        "isExternal": false,
+        "isPremium": false
+      }
+    ]
+  },
+  "keyEvents": [
+    {
+      "id": "49486215",
+      "type": {
+        "id": "94",
+        "text": "Yellow Card",
+        "type": "yellow-card"
+      },
+      "text": "Alistair Johnston (Canada) is shown the yellow card for a bad foul.",
+      "shortText": "Alistair Johnston Yellow Card",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 636.0,
+        "displayValue": "11'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "206",
+        "displayName": "Canada"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "293691",
+            "displayName": "Alistair Johnston"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-06-12T19:12:54Z",
+      "shootout": false
+    },
+    {
+      "id": "49486699",
+      "type": {
+        "id": "94",
+        "text": "Yellow Card",
+        "type": "yellow-card"
+      },
+      "text": "Ermedin Demirovic (Bosnia and Herzegovina) is shown the yellow card for a bad foul.",
+      "shortText": "Ermedin Demirovic Yellow Card",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 2646.0,
+        "displayValue": "45'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "452",
+        "displayName": "Bosnia-Herzegovina"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "269136",
+            "displayName": "Ermedin Demirovic"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-06-12T19:46:24Z",
+      "shootout": false
+    },
+    {
+      "id": "49486732",
+      "type": {
+        "id": "94",
+        "text": "Yellow Card",
+        "type": "yellow-card"
+      },
+      "text": "Jovo Lukic (Bosnia and Herzegovina) is shown the yellow card for a bad foul.",
+      "shortText": "Jovo Lukic Yellow Card",
+      "period": {
+        "number": 1
+      },
+      "clock": {
+        "value": 2700.0,
+        "displayValue": "45'+1'"
+      },
+      "scoringPlay": false,
+      "team": {
+        "id": "452",
+        "displayName": "Bosnia-Herzegovina"
+      },
+      "participants": [
+        {
+          "athlete": {
+            "id": "305118",
+            "displayName": "Jovo Lukic"
+          }
+        }
+      ],
+      "source": {
+        "id": "38",
+        "description": "SA.ENVOY"
+      },
+      "wallclock": "2026-06-12T19:48:13Z",
+      "shootout": false
+    }
+  ],
+  "rosters": [
+    {
+      "homeAway": "home",
+      "winner": false,
+      "team": {
+        "id": "206",
+        "abbreviation": "CAN",
+        "displayName": "Canada",
+        "color": "ed2224",
+        "alternateColor": "ffffff",
+        "logos": [
+          {
+            "href": "https://a.espncdn.com/i/teamlogos/countries/500/can.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "default"
+            ],
+            "lastUpdated": "2023-10-25T16:19Z"
+          },
+          {
+            "href": "https://a.espncdn.com/i/teamlogos/countries/500-dark/can.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "dark"
+            ],
+            "lastUpdated": "2023-10-25T16:22Z"
+          }
+        ]
+      },
+      "roster": [
+        {
+          "active": true,
+          "starter": true,
+          "jersey": "16",
+          "athlete": {
+            "id": "159382",
+            "uid": "s:600~a:159382",
+            "guid": "51112632-0ac2-36b4-4584-a0305b7d4509",
+            "lastName": "Cr\u00e9peau",
+            "fullName": "Maxime Cr\u00e9peau",
+            "displayName": "Maxime Cr\u00e9peau",
+            "shortName": "M. Cr\u00e9peau",
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/soccer/player/_/id/159382/maxime-crepeau",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/soccer/players/full/159382.png",
+              "alt": "Maxime Cr\u00e9peau"
+            },
+            "jerseyImages": [
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/159382/jersey.png?darkMode=false",
+                "rel": [
+                  "full",
+                  "default"
+                ],
+                "width": 1440,
+                "height": 1440
+              },
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/159382/jersey.png?darkMode=true",
+                "rel": [
+                  "full",
+                  "dark"
+                ],
+                "width": 1440,
+                "height": 1440
+              }
+            ]
+          },
+          "position": {
+            "name": "Goalkeeper",
+            "displayName": "Goalkeeper",
+            "abbreviation": "G"
+          },
+          "subbedIn": false,
+          "subbedOut": false,
+          "formationPlace": "1",
+          "media": {},
+          "stats": [
+            {
+              "name": "appearances",
+              "displayName": "Appearances",
+              "shortDisplayName": "APP",
+              "description": "The number of times a player has made an appearance in a match.",
+              "abbreviation": "APP",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "foulsCommitted",
+              "displayName": "Fouls Committed",
+              "shortDisplayName": "FC",
+              "description": "The number of fouls comitted by a player or team.",
+              "abbreviation": "FC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "foulsSuffered",
+              "displayName": "Fouls Suffered",
+              "shortDisplayName": "FA",
+              "description": "The number of fouls suffered by a player or team.",
+              "abbreviation": "FA",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "ownGoals",
+              "displayName": "Own Goals",
+              "shortDisplayName": "OG",
+              "description": "The number of own goals conceded.",
+              "abbreviation": "OG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "redCards",
+              "displayName": "Red Cards",
+              "shortDisplayName": "RC",
+              "description": "The number of red cards that have been issued.",
+              "abbreviation": "RC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "subIns",
+              "displayName": "Substitute Appearances",
+              "shortDisplayName": "SUBIN",
+              "description": "The number of times a player has come on a sub in a match.",
+              "abbreviation": "SUB",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "yellowCards",
+              "displayName": "Yellow Cards",
+              "shortDisplayName": "YC",
+              "description": "The number of yellow cards accumulated.",
+              "abbreviation": "YC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalsConceded",
+              "displayName": "Goals Against",
+              "shortDisplayName": "GA",
+              "description": "The number of goals allowed by the goalkeeper.",
+              "abbreviation": "GA",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "saves",
+              "displayName": "Saves",
+              "shortDisplayName": "SV",
+              "description": "The number of times a goalkeeper makes a save.",
+              "abbreviation": "SV",
+              "value": 2.0,
+              "displayValue": "2"
+            },
+            {
+              "name": "shotsFaced",
+              "displayName": "Shots Faced",
+              "shortDisplayName": "SHF",
+              "description": "The number of shots on target a goalkeeper has faced.",
+              "abbreviation": "SHF",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "shotsOnTarget",
+              "displayName": "Shots On Goal",
+              "shortDisplayName": "SOG",
+              "description": "The number of shots that are on goal.",
+              "abbreviation": "SOG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalGoals",
+              "displayName": "Total Goals",
+              "shortDisplayName": "G",
+              "description": "The number of goals scored against the opposing team.",
+              "abbreviation": "G",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalShots",
+              "displayName": "Shots",
+              "shortDisplayName": "SHOT",
+              "description": "The number of shots attempted.",
+              "abbreviation": "SHOT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "jersey": "13",
+          "athlete": {
+            "id": "238712",
+            "uid": "s:600~a:238712",
+            "guid": "9483f9e1-986d-9a71-7b5e-f1dffcd5ae1f",
+            "lastName": "Cornelius",
+            "fullName": "Derek Cornelius",
+            "displayName": "Derek Cornelius",
+            "shortName": "D. Cornelius",
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/soccer/player/_/id/238712/derek-cornelius",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "headshot": {
+              "href": "https://a.espncdn.com/i/headshots/soccer/players/full/238712.png",
+              "alt": "Derek Cornelius"
+            },
+            "jerseyImages": [
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/238712/jersey.png?darkMode=false",
+                "rel": [
+                  "full",
+                  "default"
+                ],
+                "width": 1440,
+                "height": 1440
+              },
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/238712/jersey.png?darkMode=true",
+                "rel": [
+                  "full",
+                  "dark"
+                ],
+                "width": 1440,
+                "height": 1440
+              }
+            ]
+          },
+          "position": {
+            "name": "Center Left Defender",
+            "displayName": "Center Left Defender",
+            "abbreviation": "CD-L"
+          },
+          "subbedIn": false,
+          "subbedOut": false,
+          "formationPlace": "6",
+          "media": {},
+          "stats": [
+            {
+              "name": "appearances",
+              "displayName": "Appearances",
+              "shortDisplayName": "APP",
+              "description": "The number of times a player has made an appearance in a match.",
+              "abbreviation": "APP",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "foulsCommitted",
+              "displayName": "Fouls Committed",
+              "shortDisplayName": "FC",
+              "description": "The number of fouls comitted by a player or team.",
+              "abbreviation": "FC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "foulsSuffered",
+              "displayName": "Fouls Suffered",
+              "shortDisplayName": "FA",
+              "description": "The number of fouls suffered by a player or team.",
+              "abbreviation": "FA",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "ownGoals",
+              "displayName": "Own Goals",
+              "shortDisplayName": "OG",
+              "description": "The number of own goals conceded.",
+              "abbreviation": "OG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "redCards",
+              "displayName": "Red Cards",
+              "shortDisplayName": "RC",
+              "description": "The number of red cards that have been issued.",
+              "abbreviation": "RC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "subIns",
+              "displayName": "Substitute Appearances",
+              "shortDisplayName": "SUBIN",
+              "description": "The number of times a player has come on a sub in a match.",
+              "abbreviation": "SUB",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "yellowCards",
+              "displayName": "Yellow Cards",
+              "shortDisplayName": "YC",
+              "description": "The number of yellow cards accumulated.",
+              "abbreviation": "YC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalsConceded",
+              "displayName": "Goals Against",
+              "shortDisplayName": "GA",
+              "description": "The number of goals allowed by the goalkeeper.",
+              "abbreviation": "GA",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "shotsFaced",
+              "displayName": "Shots Faced",
+              "shortDisplayName": "SHF",
+              "description": "The number of shots on target a goalkeeper has faced.",
+              "abbreviation": "SHF",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "offsides",
+              "displayName": "Offsides",
+              "shortDisplayName": "OF",
+              "description": "The number of times a player or team gets caught offside.",
+              "abbreviation": "OF",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "shotsOnTarget",
+              "displayName": "Shots On Goal",
+              "shortDisplayName": "SOG",
+              "description": "The number of shots that are on goal.",
+              "abbreviation": "SOG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalGoals",
+              "displayName": "Total Goals",
+              "shortDisplayName": "G",
+              "description": "The number of goals scored against the opposing team.",
+              "abbreviation": "G",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalShots",
+              "displayName": "Shots",
+              "shortDisplayName": "SHOT",
+              "description": "The number of shots attempted.",
+              "abbreviation": "SHOT",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ]
+        }
+      ],
+      "uniform": {
+        "type": "home",
+        "color": "b80014",
+        "alternateColor": "990005"
+      },
+      "formation": "4-4-2"
+    },
+    {
+      "homeAway": "away",
+      "winner": false,
+      "team": {
+        "id": "452",
+        "abbreviation": "BIH",
+        "displayName": "Bosnia-Herzegovina",
+        "color": "112855",
+        "alternateColor": "ffffff",
+        "logos": [
+          {
+            "href": "https://a.espncdn.com/i/teamlogos/countries/500/bih.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "default"
+            ],
+            "lastUpdated": "2018-06-05T12:06Z"
+          },
+          {
+            "href": "https://a.espncdn.com/i/teamlogos/countries/500-dark/bih.png",
+            "width": 500,
+            "height": 500,
+            "alt": "",
+            "rel": [
+              "full",
+              "dark"
+            ],
+            "lastUpdated": "2018-06-05T12:06Z"
+          }
+        ]
+      },
+      "roster": [
+        {
+          "active": true,
+          "starter": true,
+          "jersey": "1",
+          "athlete": {
+            "id": "79941",
+            "uid": "s:600~a:79941",
+            "guid": "6d774d3a-8fcb-a4bf-459b-07994e14da99",
+            "lastName": "Vasilj",
+            "fullName": "Nikola Vasilj",
+            "displayName": "Nikola Vasilj",
+            "shortName": "N. Vasilj",
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/soccer/player/_/id/79941/nikola-vasilj",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "jerseyImages": [
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/79941/jersey.png?darkMode=false",
+                "rel": [
+                  "full",
+                  "default"
+                ],
+                "width": 1440,
+                "height": 1440
+              },
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/79941/jersey.png?darkMode=true",
+                "rel": [
+                  "full",
+                  "dark"
+                ],
+                "width": 1440,
+                "height": 1440
+              }
+            ]
+          },
+          "position": {
+            "name": "Goalkeeper",
+            "displayName": "Goalkeeper",
+            "abbreviation": "G"
+          },
+          "subbedIn": false,
+          "subbedOut": false,
+          "formationPlace": "1",
+          "media": {},
+          "stats": [
+            {
+              "name": "appearances",
+              "displayName": "Appearances",
+              "shortDisplayName": "APP",
+              "description": "The number of times a player has made an appearance in a match.",
+              "abbreviation": "APP",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "foulsCommitted",
+              "displayName": "Fouls Committed",
+              "shortDisplayName": "FC",
+              "description": "The number of fouls comitted by a player or team.",
+              "abbreviation": "FC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "foulsSuffered",
+              "displayName": "Fouls Suffered",
+              "shortDisplayName": "FA",
+              "description": "The number of fouls suffered by a player or team.",
+              "abbreviation": "FA",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "ownGoals",
+              "displayName": "Own Goals",
+              "shortDisplayName": "OG",
+              "description": "The number of own goals conceded.",
+              "abbreviation": "OG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "redCards",
+              "displayName": "Red Cards",
+              "shortDisplayName": "RC",
+              "description": "The number of red cards that have been issued.",
+              "abbreviation": "RC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "subIns",
+              "displayName": "Substitute Appearances",
+              "shortDisplayName": "SUBIN",
+              "description": "The number of times a player has come on a sub in a match.",
+              "abbreviation": "SUB",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "yellowCards",
+              "displayName": "Yellow Cards",
+              "shortDisplayName": "YC",
+              "description": "The number of yellow cards accumulated.",
+              "abbreviation": "YC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalsConceded",
+              "displayName": "Goals Against",
+              "shortDisplayName": "GA",
+              "description": "The number of goals allowed by the goalkeeper.",
+              "abbreviation": "GA",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "saves",
+              "displayName": "Saves",
+              "shortDisplayName": "SV",
+              "description": "The number of times a goalkeeper makes a save.",
+              "abbreviation": "SV",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "shotsFaced",
+              "displayName": "Shots Faced",
+              "shortDisplayName": "SHF",
+              "description": "The number of shots on target a goalkeeper has faced.",
+              "abbreviation": "SHF",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "shotsOnTarget",
+              "displayName": "Shots On Goal",
+              "shortDisplayName": "SOG",
+              "description": "The number of shots that are on goal.",
+              "abbreviation": "SOG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalGoals",
+              "displayName": "Total Goals",
+              "shortDisplayName": "G",
+              "description": "The number of goals scored against the opposing team.",
+              "abbreviation": "G",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalShots",
+              "displayName": "Shots",
+              "shortDisplayName": "SHOT",
+              "description": "The number of shots attempted.",
+              "abbreviation": "SHOT",
+              "value": 0.0,
+              "displayValue": "0"
+            }
+          ]
+        },
+        {
+          "active": true,
+          "starter": true,
+          "jersey": "4",
+          "athlete": {
+            "id": "318390",
+            "uid": "s:600~a:318390",
+            "guid": "f0258c1d-d5c8-3aeb-b5bc-d46873444490",
+            "lastName": "Muharemovic",
+            "fullName": "Tarik Muharemovic",
+            "displayName": "Tarik Muharemovic",
+            "shortName": "T. Muharemovic",
+            "links": [
+              {
+                "language": "en-US",
+                "rel": [
+                  "playercard",
+                  "desktop",
+                  "athlete"
+                ],
+                "href": "https://www.espn.com/soccer/player/_/id/318390/tarik-muharemovic",
+                "text": "Player Card",
+                "shortText": "Player Card",
+                "isExternal": false,
+                "isPremium": false
+              }
+            ],
+            "jerseyImages": [
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/318390/jersey.png?darkMode=false",
+                "rel": [
+                  "full",
+                  "default"
+                ],
+                "width": 1440,
+                "height": 1440
+              },
+              {
+                "href": "https://stitcher.espn.com/sports/soccer/leagues/fifa.world/events/760416/athletes/318390/jersey.png?darkMode=true",
+                "rel": [
+                  "full",
+                  "dark"
+                ],
+                "width": 1440,
+                "height": 1440
+              }
+            ]
+          },
+          "position": {
+            "name": "Center Left Defender",
+            "displayName": "Center Left Defender",
+            "abbreviation": "CD-L"
+          },
+          "subbedIn": false,
+          "subbedOut": false,
+          "formationPlace": "6",
+          "media": {},
+          "stats": [
+            {
+              "name": "appearances",
+              "displayName": "Appearances",
+              "shortDisplayName": "APP",
+              "description": "The number of times a player has made an appearance in a match.",
+              "abbreviation": "APP",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "foulsCommitted",
+              "displayName": "Fouls Committed",
+              "shortDisplayName": "FC",
+              "description": "The number of fouls comitted by a player or team.",
+              "abbreviation": "FC",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "foulsSuffered",
+              "displayName": "Fouls Suffered",
+              "shortDisplayName": "FA",
+              "description": "The number of fouls suffered by a player or team.",
+              "abbreviation": "FA",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "ownGoals",
+              "displayName": "Own Goals",
+              "shortDisplayName": "OG",
+              "description": "The number of own goals conceded.",
+              "abbreviation": "OG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "redCards",
+              "displayName": "Red Cards",
+              "shortDisplayName": "RC",
+              "description": "The number of red cards that have been issued.",
+              "abbreviation": "RC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "subIns",
+              "displayName": "Substitute Appearances",
+              "shortDisplayName": "SUBIN",
+              "description": "The number of times a player has come on a sub in a match.",
+              "abbreviation": "SUB",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "yellowCards",
+              "displayName": "Yellow Cards",
+              "shortDisplayName": "YC",
+              "description": "The number of yellow cards accumulated.",
+              "abbreviation": "YC",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalsConceded",
+              "displayName": "Goals Against",
+              "shortDisplayName": "GA",
+              "description": "The number of goals allowed by the goalkeeper.",
+              "abbreviation": "GA",
+              "value": 1.0,
+              "displayValue": "1"
+            },
+            {
+              "name": "shotsFaced",
+              "displayName": "Shots Faced",
+              "shortDisplayName": "SHF",
+              "description": "The number of shots on target a goalkeeper has faced.",
+              "abbreviation": "SHF",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "goalAssists",
+              "displayName": "Assists",
+              "shortDisplayName": "A",
+              "description": "The number of assists.",
+              "abbreviation": "A",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "offsides",
+              "displayName": "Offsides",
+              "shortDisplayName": "OF",
+              "description": "The number of times a player or team gets caught offside.",
+              "abbreviation": "OF",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "shotsOnTarget",
+              "displayName": "Shots On Goal",
+              "shortDisplayName": "SOG",
+              "description": "The number of shots that are on goal.",
+              "abbreviation": "SOG",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalGoals",
+              "displayName": "Total Goals",
+              "shortDisplayName": "G",
+              "description": "The number of goals scored against the opposing team.",
+              "abbreviation": "G",
+              "value": 0.0,
+              "displayValue": "0"
+            },
+            {
+              "name": "totalShots",
+              "displayName": "Shots",
+              "shortDisplayName": "SHOT",
+              "description": "The number of shots attempted.",
+              "abbreviation": "SHOT",
+              "value": 1.0,
+              "displayValue": "1"
+            }
+          ]
+        }
+      ],
+      "uniform": {
+        "type": "away",
+        "color": "f7f7f7",
+        "alternateColor": "1d326b"
+      },
+      "formation": "4-4-2"
+    }
+  ],
+  "boxscore": {
+    "teams": [
+      {
+        "team": {
+          "id": "206",
+          "uid": "s:600~t:206",
+          "slug": "can",
+          "location": "Canada",
+          "name": "Canada",
+          "abbreviation": "CAN",
+          "displayName": "Canada",
+          "shortDisplayName": "Canada",
+          "color": "ed2224",
+          "alternateColor": "ffffff",
+          "logo": "https://a.espncdn.com/i/teamlogos/countries/500/can.png",
+          "uniform": {
+            "type": "home",
+            "color": "b80014",
+            "alternateColor": "990005"
+          }
+        },
+        "statistics": [
+          {
+            "name": "foulsCommitted",
+            "displayValue": "9",
+            "label": "Fouls"
+          },
+          {
+            "name": "yellowCards",
+            "displayValue": "2",
+            "label": "Yellow Cards"
+          },
+          {
+            "name": "redCards",
+            "displayValue": "0",
+            "label": "Red Cards"
+          },
+          {
+            "name": "offsides",
+            "displayValue": "1",
+            "label": "Offsides"
+          },
+          {
+            "name": "wonCorners",
+            "displayValue": "9",
+            "label": "Corner Kicks"
+          },
+          {
+            "name": "saves",
+            "displayValue": "2",
+            "label": "Saves"
+          },
+          {
+            "name": "possessionPct",
+            "displayValue": "62.1",
+            "label": "POSSESSION"
+          },
+          {
+            "name": "totalShots",
+            "displayValue": "11",
+            "label": "SHOTS"
+          },
+          {
+            "name": "shotsOnTarget",
+            "displayValue": "4",
+            "label": "ON GOAL"
+          },
+          {
+            "name": "shotPct",
+            "displayValue": "0.4",
+            "label": "On Target %"
+          },
+          {
+            "name": "penaltyKickGoals",
+            "displayValue": "0",
+            "label": "Penalty Goals"
+          },
+          {
+            "name": "penaltyKickShots",
+            "displayValue": "0",
+            "label": "Penalty Kicks Taken"
+          },
+          {
+            "name": "accuratePasses",
+            "displayValue": "256",
+            "label": "Accurate Passes"
+          },
+          {
+            "name": "totalPasses",
+            "displayValue": "343",
+            "label": "Passes"
+          },
+          {
+            "name": "passPct",
+            "displayValue": "0.7",
+            "label": "Pass Completion %"
+          },
+          {
+            "name": "accurateCrosses",
+            "displayValue": "6",
+            "label": "Accurate Crosses"
+          },
+          {
+            "name": "totalCrosses",
+            "displayValue": "21",
+            "label": "Crosses"
+          },
+          {
+            "name": "crossPct",
+            "displayValue": "0.3",
+            "label": "Cross %"
+          },
+          {
+            "name": "totalLongBalls",
+            "displayValue": "36",
+            "label": "Long Balls"
+          },
+          {
+            "name": "accurateLongBalls",
+            "displayValue": "18",
+            "label": "Accurate Long Balls"
+          },
+          {
+            "name": "longballPct",
+            "displayValue": "0.5",
+            "label": "Long Balls %"
+          },
+          {
+            "name": "blockedShots",
+            "displayValue": "3",
+            "label": "Blocked Shots"
+          },
+          {
+            "name": "effectiveTackles",
+            "displayValue": "11",
+            "label": "Effective Tackles"
+          },
+          {
+            "name": "totalTackles",
+            "displayValue": "16",
+            "label": "Tackles"
+          },
+          {
+            "name": "tacklePct",
+            "displayValue": "0.7",
+            "label": "Tackle %"
+          },
+          {
+            "name": "interceptions",
+            "displayValue": "3",
+            "label": "Interceptions"
+          },
+          {
+            "name": "effectiveClearance",
+            "displayValue": "17",
+            "label": "Effective Clearances"
+          },
+          {
+            "name": "totalClearance",
+            "displayValue": "17",
+            "label": "Clearances"
+          }
+        ],
+        "displayOrder": 1,
+        "homeAway": "home"
+      },
+      {
+        "team": {
+          "id": "452",
+          "uid": "s:600~t:452",
+          "slug": "bih",
+          "location": "Bosnia-Herzegovina",
+          "name": "Bosnia-Herzegovina",
+          "abbreviation": "BIH",
+          "displayName": "Bosnia-Herzegovina",
+          "shortDisplayName": "Bosnia-Herz",
+          "color": "112855",
+          "alternateColor": "ffffff",
+          "logo": "https://a.espncdn.com/i/teamlogos/countries/500/bih.png",
+          "uniform": {
+            "type": "away",
+            "color": "f7f7f7",
+            "alternateColor": "1d326b"
+          }
+        },
+        "statistics": [
+          {
+            "name": "foulsCommitted",
+            "displayValue": "16",
+            "label": "Fouls"
+          },
+          {
+            "name": "yellowCards",
+            "displayValue": "2",
+            "label": "Yellow Cards"
+          },
+          {
+            "name": "redCards",
+            "displayValue": "0",
+            "label": "Red Cards"
+          },
+          {
+            "name": "offsides",
+            "displayValue": "0",
+            "label": "Offsides"
+          },
+          {
+            "name": "wonCorners",
+            "displayValue": "3",
+            "label": "Corner Kicks"
+          },
+          {
+            "name": "saves",
+            "displayValue": "1",
+            "label": "Saves"
+          },
+          {
+            "name": "possessionPct",
+            "displayValue": "37.9",
+            "label": "POSSESSION"
+          },
+          {
+            "name": "totalShots",
+            "displayValue": "7",
+            "label": "SHOTS"
+          },
+          {
+            "name": "shotsOnTarget",
+            "displayValue": "3",
+            "label": "ON GOAL"
+          },
+          {
+            "name": "shotPct",
+            "displayValue": "0.4",
+            "label": "On Target %"
+          },
+          {
+            "name": "penaltyKickGoals",
+            "displayValue": "0",
+            "label": "Penalty Goals"
+          },
+          {
+            "name": "penaltyKickShots",
+            "displayValue": "0",
+            "label": "Penalty Kicks Taken"
+          },
+          {
+            "name": "accuratePasses",
+            "displayValue": "135",
+            "label": "Accurate Passes"
+          },
+          {
+            "name": "totalPasses",
+            "displayValue": "211",
+            "label": "Passes"
+          },
+          {
+            "name": "passPct",
+            "displayValue": "0.6",
+            "label": "Pass Completion %"
+          },
+          {
+            "name": "accurateCrosses",
+            "displayValue": "6",
+            "label": "Accurate Crosses"
+          },
+          {
+            "name": "totalCrosses",
+            "displayValue": "9",
+            "label": "Crosses"
+          },
+          {
+            "name": "crossPct",
+            "displayValue": "0.7",
+            "label": "Cross %"
+          },
+          {
+            "name": "totalLongBalls",
+            "displayValue": "48",
+            "label": "Long Balls"
+          },
+          {
+            "name": "accurateLongBalls",
+            "displayValue": "12",
+            "label": "Accurate Long Balls"
+          },
+          {
+            "name": "longballPct",
+            "displayValue": "0.3",
+            "label": "Long Balls %"
+          },
+          {
+            "name": "blockedShots",
+            "displayValue": "0",
+            "label": "Blocked Shots"
+          },
+          {
+            "name": "effectiveTackles",
+            "displayValue": "10",
+            "label": "Effective Tackles"
+          },
+          {
+            "name": "totalTackles",
+            "displayValue": "15",
+            "label": "Tackles"
+          },
+          {
+            "name": "tacklePct",
+            "displayValue": "0.7",
+            "label": "Tackle %"
+          },
+          {
+            "name": "interceptions",
+            "displayValue": "10",
+            "label": "Interceptions"
+          },
+          {
+            "name": "effectiveClearance",
+            "displayValue": "65",
+            "label": "Effective Clearances"
+          },
+          {
+            "name": "totalClearance",
+            "displayValue": "65",
+            "label": "Clearances"
+          }
+        ],
+        "displayOrder": 2,
+        "homeAway": "away"
+      }
+    ]
+  }
+}
