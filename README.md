@@ -42,21 +42,33 @@ Requires the toolchain pinned in `rust-toolchain.toml`.
 
 ## Keybindings
 
-| Key            | Action                |
-| -------------- | --------------------- |
-| `1`–`4`, `Tab` | Switch screen         |
-| `j`/`k`, `↑`/`↓` | Move selection      |
-| `Enter`        | Open match detail     |
-| `Esc`          | Back / close          |
-| `r`            | Refresh now           |
-| `t`            | Cycle colour theme    |
-| `?`            | Toggle help           |
-| `q`            | Quit                  |
+| Key                 | Action                              |
+| ------------------- | ----------------------------------- |
+| `1`–`4`             | Jump to a screen by number          |
+| `Tab` / `Shift+Tab` | Next / previous screen              |
+| `j`/`k`, `↓`/`↑`    | Move selection                      |
+| `Enter`             | Open match detail                   |
+| `f`                 | Toggle favourites filter (Matches)  |
+| `h`/`l`, `←`/`→`    | Switch group / round                |
+| `r`                 | Refresh now                         |
+| `t`                 | Cycle colour theme                  |
+| `?`                 | Toggle help                         |
+| `Esc`               | Back / close                        |
+| `q`                 | Quit                                |
+
+The full list, including per-screen and mouse bindings, is in
+[docs/keybindings.md](docs/keybindings.md).
 
 ## Workspace layout
 
 - `crates/wc-data` — normalized domain model and provider backends.
 - `crates/wc-tui` — the terminal UI (binary `wc26`).
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — crates, data flow, polling, cache.
+- [Data providers](docs/data-providers.md) — providers, API keys, configuration.
+- [Keybindings](docs/keybindings.md) — full keyboard and mouse reference.
 
 ## License
 
