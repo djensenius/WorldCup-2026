@@ -1,0 +1,4 @@
+# `cross` build configuration for the Linux release targets.
+#
+# wc26 is a Rustls-backed network TUI with no native audio stack, so the release
+# targets intentionally need no ALSA, PipeWire, or other audio system packages.
