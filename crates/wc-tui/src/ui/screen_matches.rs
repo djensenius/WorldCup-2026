@@ -23,7 +23,12 @@ use crate::ui::theme::Theme;
 /// Render the matches screen.
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme();
-    let block = widgets::panel("Matches", theme);
+    let hint = if app.ui_state.matches_favorites_only {
+        "j/k move · f all · Enter detail"
+    } else {
+        "j/k move · f favourites · Enter detail"
+    };
+    let block = widgets::screen_block("Matches", hint, theme);
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -61,15 +66,9 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
         app,
         usize::from(inner.height),
     );
-    let title = if app.ui_state.matches_favorites_only {
-        "Favorites only — f: all · Enter: detail"
-    } else {
-        "j/k: move · f: favorites · Enter: detail"
-    };
     let paragraph = Paragraph::new(lines)
         .style(Style::new().fg(theme.fg))
-        .wrap(Wrap { trim: false })
-        .block(widgets::panel(title, theme));
+        .wrap(Wrap { trim: false });
     frame.render_widget(paragraph, inner);
 }
 
@@ -139,6 +138,9 @@ fn schedule_lines(
     for m in rows {
         let day = timefmt::date_heading(m.kickoff, &app.config().ui.timezone, app.local_offset());
         if day != current_day {
+            if !all.is_empty() {
+                all.push(Line::from(""));
+            }
             current_day.clone_from(&day);
             all.push(Line::from(Span::styled(
                 day,
@@ -167,7 +169,7 @@ fn schedule_lines(
         ));
     }
 
-    let available = height.saturating_sub(2).max(1);
+    let available = height.max(1);
     let start = selected_line.saturating_sub(available.saturating_sub(1));
     all.into_iter().skip(start).take(available).collect()
 }
@@ -181,10 +183,7 @@ fn match_row_line(
     selected: bool,
 ) -> Line<'static> {
     let row_style = if selected {
-        Style::new()
-            .fg(theme.fg)
-            .bg(theme.bg)
-            .add_modifier(Modifier::BOLD)
+        Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
     } else {
         Style::new().fg(theme.fg)
     };
@@ -193,12 +192,22 @@ fn match_row_line(
     } else {
         row_style
     };
-    let mark = if selected { "›" } else { " " };
+    let (marker, marker_style) = if selected {
+        (
+            "›",
+            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
+        )
+    } else if favorite {
+        (icons.star(), Style::new().fg(theme.accent))
+    } else {
+        (" ", Style::new().fg(theme.dim))
+    };
     Line::from(vec![
-        Span::styled(format!("{mark} {kickoff:<5} "), row_style.fg(theme.dim)),
-        Span::styled(team_label(&m.home), team_style),
-        Span::styled(format!(" {:^7} ", score_text(m)), row_style),
-        Span::styled(team_label(&m.away), team_style),
+        Span::styled(format!("{marker} "), marker_style),
+        Span::styled(format!("{kickoff:<5}  "), Style::new().fg(theme.dim)),
+        Span::styled(format!("{:>6}", team_label(&m.home)), team_style),
+        Span::styled(format!(" {:^11} ", score_text(m)), row_style),
+        Span::styled(format!("{:<6}", team_label(&m.away)), team_style),
         Span::styled("  ", row_style),
         status_span(&m.status, theme, icons),
     ])

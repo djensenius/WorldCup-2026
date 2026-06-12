@@ -50,6 +50,19 @@ pub struct DetailNav {
     pub label: String,
 }
 
+/// Navigation target for the team overlay (a team's standing, form, fixtures).
+#[derive(Debug, Clone)]
+pub struct TeamNav {
+    /// Provider team id, used to match fixtures and the standings row.
+    pub team_id: String,
+    /// Team display name.
+    pub name: String,
+    /// Team short code.
+    pub abbreviation: String,
+    /// Group letter the team belongs to, when known.
+    pub group: Option<String>,
+}
+
 /// Mutable per-screen UI state (selections, scroll, filters). Screens read and
 /// write these directly; centralising them here keeps the screen modules free
 /// of their own state plumbing.
@@ -63,6 +76,10 @@ pub struct ScreenState {
     pub live_selected: usize,
     /// Selected group index (0–11) on the Standings screen.
     pub standings_group: usize,
+    /// Selected team row within the current standings group.
+    pub standings_row: usize,
+    /// Selected fixture row in the team overlay.
+    pub team_selected: usize,
     /// Selected round on the Bracket screen.
     pub bracket_round: usize,
     /// Selected match within the bracket round.
@@ -91,6 +108,7 @@ pub struct App {
     local_offset: UtcOffset,
     screen: Screen,
     detail: Option<DetailNav>,
+    team: Option<TeamNav>,
     show_help: bool,
     should_quit: bool,
 
@@ -153,6 +171,7 @@ impl App {
             local_offset,
             screen: Screen::Matches,
             detail: None,
+            team: None,
             show_help: false,
             should_quit: false,
             scoreboard,
@@ -236,6 +255,11 @@ impl App {
         self.detail.as_ref()
     }
 
+    /// The active team overlay target, if open.
+    pub fn team(&self) -> Option<&TeamNav> {
+        self.team.as_ref()
+    }
+
     /// The active provider's display name.
     pub fn provider_name(&self) -> &'static str {
         self.provider.name()
@@ -288,6 +312,9 @@ impl App {
     pub fn active_data_age(&self) -> Option<Duration> {
         if self.detail.is_some() {
             return self.detail_poller.state().age();
+        }
+        if self.team.is_some() {
+            return self.scoreboard.state().age();
         }
         match self.screen {
             Screen::Matches | Screen::Live => self.scoreboard.state().age(),
@@ -347,6 +374,44 @@ impl App {
         self.detail = None;
     }
 
+    /// Open the team overlay for a team and reset its selection.
+    pub fn open_team(
+        &mut self,
+        team_id: impl Into<String>,
+        name: impl Into<String>,
+        abbreviation: impl Into<String>,
+        group: Option<String>,
+    ) {
+        self.team = Some(TeamNav {
+            team_id: team_id.into(),
+            name: name.into(),
+            abbreviation: abbreviation.into(),
+            group,
+        });
+        self.ui_state.team_selected = 0;
+    }
+
+    /// Close the team overlay.
+    pub fn close_team(&mut self) {
+        self.team = None;
+    }
+
+    /// Toggle a team's favourite status, persist the config, and notify.
+    pub fn toggle_favorite(&mut self, name: &str, abbreviation: &str) {
+        let now_favorite = self.config.toggle_favorite(name, abbreviation);
+        let message = if now_favorite {
+            format!("{} Favourited {name}", self.icons.star())
+        } else {
+            format!("Removed {name} from favourites")
+        };
+        match self.config.save_to(&self.config_path) {
+            Ok(()) => self.toasts.info(message),
+            Err(err) => self
+                .toasts
+                .warn(format!("Could not save favourites: {err}")),
+        }
+    }
+
     /// Scroll the detail overlay by `delta` lines (clamped at zero).
     pub fn scroll_detail(&mut self, delta: i16) {
         let next = i32::from(self.ui_state.detail_scroll) + i32::from(delta);
@@ -378,6 +443,8 @@ impl App {
             KeyCode::Esc => {
                 if self.detail.is_some() {
                     self.close_detail();
+                } else if self.team.is_some() {
+                    self.close_team();
                 }
                 return;
             }
@@ -389,15 +456,15 @@ impl App {
                 self.cycle_theme();
                 return;
             }
-            KeyCode::Tab if self.detail.is_none() => {
+            KeyCode::Tab if self.detail.is_none() && self.team.is_none() => {
                 self.next_screen();
                 return;
             }
-            KeyCode::BackTab if self.detail.is_none() => {
+            KeyCode::BackTab if self.detail.is_none() && self.team.is_none() => {
                 self.prev_screen();
                 return;
             }
-            KeyCode::Char(c @ '1'..='4') if self.detail.is_none() => {
+            KeyCode::Char(c @ '1'..='4') if self.detail.is_none() && self.team.is_none() => {
                 let index = c as usize - '1' as usize;
                 self.screen = Screen::from_index(index);
                 return;
@@ -414,7 +481,9 @@ impl App {
         match mouse.kind {
             MouseEventKind::ScrollDown => self.on_scroll(1),
             MouseEventKind::ScrollUp => self.on_scroll(-1),
-            MouseEventKind::Down(MouseButton::Left) if self.detail.is_none() => {
+            MouseEventKind::Down(MouseButton::Left)
+                if self.detail.is_none() && self.team.is_none() =>
+            {
                 if let Some(index) = self.tab_at(mouse.column, mouse.row) {
                     self.screen = Screen::from_index(index);
                 }
@@ -517,6 +586,9 @@ impl App {
     fn refresh_active(&mut self) {
         if self.detail.is_some() {
             self.refresh_detail();
+        } else if self.team.is_some() {
+            self.refresh_scoreboard();
+            self.refresh_standings();
         } else {
             match self.screen {
                 Screen::Matches | Screen::Live => self.refresh_scoreboard(),

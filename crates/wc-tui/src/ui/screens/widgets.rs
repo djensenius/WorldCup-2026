@@ -19,6 +19,19 @@ pub fn panel(title: &str, theme: &Theme) -> Block<'static> {
         .title_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD))
 }
 
+/// A single bordered panel with a themed title on the top border and a
+/// right-aligned, de-emphasised `hint` on the bottom border. Screens render
+/// their content directly inside this block (no nested panel) to avoid the
+/// crowded double-border look.
+#[must_use]
+pub fn screen_block(title: &str, hint: &str, theme: &Theme) -> Block<'static> {
+    panel(title, theme).title_bottom(
+        Line::from(format!(" {hint} "))
+            .right_aligned()
+            .style(Style::new().fg(theme.dim)),
+    )
+}
+
 /// A horizontally and vertically centred sub-rect of the given size.
 #[must_use]
 pub fn centered(area: Rect, width: u16, height: u16) -> Rect {

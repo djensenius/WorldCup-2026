@@ -28,6 +28,8 @@ enum Qualification {
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct StandingDisplayRow {
     team: String,
+    name: String,
+    abbreviation: String,
     played: String,
     won: String,
     drawn: String,
@@ -55,7 +57,11 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
             || "Standings".to_owned(),
             |group| format!("Group {}", group.name),
         );
-    let block = widgets::panel(&title, theme);
+    let block = widgets::screen_block(
+        &title,
+        "j/k team · h/l group · Enter open · * favourite",
+        theme,
+    );
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -95,7 +101,7 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
         return;
     }
 
-    let [selector_area, hint_area, table_area] = Layout::vertical([
+    let [selector_area, _spacer, table_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
         Constraint::Min(3),
@@ -105,23 +111,24 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
     let selector = group_selector(groups, selected, theme);
     frame.render_widget(Paragraph::new(selector), selector_area);
 
-    let hint = Line::from(vec![
-        Span::styled("←/h ", Style::new().fg(theme.dim)),
-        Span::styled(app.icons().bullet(), Style::new().fg(theme.dim)),
-        Span::styled(" l/→ cycle groups  ", Style::new().fg(theme.dim)),
-        Span::styled("top 2 qualify", Style::new().fg(theme.ok)),
-        Span::styled("  rank 3", Style::new().fg(theme.warn)),
-    ]);
-    frame.render_widget(Paragraph::new(hint), hint_area);
-
-    let header = Row::new(["Team", "P", "W", "D", "L", "GF", "GA", "GD", "Pts"])
+    let selected_row = app
+        .ui_state
+        .standings_row
+        .min(group.standings.len().saturating_sub(1));
+    let star = app.icons().star();
+    let header = Row::new(["", "Team", "P", "W", "D", "L", "GF", "GA", "GD", "Pts"])
         .style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD));
     let rows = standing_rows(group)
         .into_iter()
-        .map(|row| row.into_table_row(theme));
+        .enumerate()
+        .map(|(index, row)| {
+            let favorite = app.config().is_favorite(&row.name, &row.abbreviation);
+            row.into_table_row(theme, index == selected_row, favorite, star)
+        });
     let table = Table::new(
         rows,
         [
+            Constraint::Length(2),
             Constraint::Min(16),
             Constraint::Length(4),
             Constraint::Length(4),
@@ -159,7 +166,7 @@ fn group_selector(groups: &[Group], selected: usize, theme: &Theme) -> Line<'sta
     Line::from(spans)
 }
 
-fn standing_rows(group: &Group) -> Vec<StandingDisplayRow> {
+fn sorted_standings(group: &Group) -> Vec<GroupStanding> {
     let mut standings = group.standings.clone();
     standings.sort_by(|a, b| {
         a.rank
@@ -169,8 +176,11 @@ fn standing_rows(group: &Group) -> Vec<StandingDisplayRow> {
             .then_with(|| b.goals_for.cmp(&a.goals_for))
             .then_with(|| a.team.name.cmp(&b.team.name))
     });
-
     standings
+}
+
+fn standing_rows(group: &Group) -> Vec<StandingDisplayRow> {
+    sorted_standings(group)
         .into_iter()
         .map(StandingDisplayRow::from)
         .collect()
@@ -185,6 +195,8 @@ impl From<GroupStanding> for StandingDisplayRow {
         };
         Self {
             team: format!("{}. {}", standing.rank, standing.team.name),
+            name: standing.team.name,
+            abbreviation: standing.team.abbreviation,
             played: standing.played.to_string(),
             won: standing.won.to_string(),
             drawn: standing.drawn.to_string(),
@@ -199,14 +211,35 @@ impl From<GroupStanding> for StandingDisplayRow {
 }
 
 impl StandingDisplayRow {
-    fn into_table_row(self, theme: &Theme) -> Row<'static> {
-        let style = match self.qualification {
+    fn into_table_row(
+        self,
+        theme: &Theme,
+        selected: bool,
+        favorite: bool,
+        star: &str,
+    ) -> Row<'static> {
+        let mut style = match self.qualification {
             Qualification::Qualified => Style::new().fg(theme.ok),
             Qualification::Third => Style::new().fg(theme.warn),
             Qualification::Other => Style::new().fg(theme.fg),
         };
+        if selected {
+            style = style.add_modifier(Modifier::BOLD);
+        }
+        let marker = if selected { "›" } else { " " };
+        let marker_style = if selected {
+            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD)
+        } else {
+            style
+        };
+        let team = if favorite {
+            format!("{} {star}", self.team)
+        } else {
+            self.team
+        };
         Row::new(vec![
-            Cell::from(self.team),
+            Cell::from(marker).style(marker_style),
+            Cell::from(team),
             Cell::from(self.played),
             Cell::from(self.won),
             Cell::from(self.drawn),
@@ -234,10 +267,40 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> bool {
         KeyCode::Char('h') | KeyCode::Left => {
             app.ui_state.standings_group =
                 (app.ui_state.standings_group + GROUP_COUNT - 1) % GROUP_COUNT;
+            app.ui_state.standings_row = 0;
             true
         }
         KeyCode::Char('l') | KeyCode::Right | KeyCode::Tab => {
             app.ui_state.standings_group = (app.ui_state.standings_group + 1) % GROUP_COUNT;
+            app.ui_state.standings_row = 0;
+            true
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            let len = current_group_len(app);
+            if len > 0 {
+                app.ui_state.standings_row = (app.ui_state.standings_row + 1).min(len - 1);
+            }
+            true
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            app.ui_state.standings_row = app.ui_state.standings_row.saturating_sub(1);
+            true
+        }
+        KeyCode::Enter => {
+            if let Some((group, standing)) = selected_standing(app) {
+                app.open_team(
+                    standing.team.id,
+                    standing.team.name,
+                    standing.team.abbreviation,
+                    Some(group),
+                );
+            }
+            true
+        }
+        KeyCode::Char('*') => {
+            if let Some((_, standing)) = selected_standing(app) {
+                app.toggle_favorite(&standing.team.name, &standing.team.abbreviation);
+            }
             true
         }
         KeyCode::Char(c) => select_group(app, c),
@@ -245,16 +308,54 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     }
 }
 
+/// Number of teams in the currently selected group.
+fn current_group_len(app: &App) -> usize {
+    app.standings().state().value().map_or(0, |groups| {
+        let index = app
+            .ui_state
+            .standings_group
+            .min(groups.len().saturating_sub(1));
+        groups.get(index).map_or(0, |group| group.standings.len())
+    })
+}
+
+/// The selected group's name and the standing row under the cursor.
+fn selected_standing(app: &App) -> Option<(String, GroupStanding)> {
+    let groups = app.standings().state().value()?;
+    if groups.is_empty() {
+        return None;
+    }
+    let group_index = app
+        .ui_state
+        .standings_group
+        .min(groups.len().saturating_sub(1));
+    let group = groups.get(group_index)?;
+    if group.standings.is_empty() {
+        return None;
+    }
+    let sorted = sorted_standings(group);
+    let row_index = app
+        .ui_state
+        .standings_row
+        .min(sorted.len().saturating_sub(1));
+    sorted
+        .get(row_index)
+        .cloned()
+        .map(|standing| (group.name.clone(), standing))
+}
+
 fn select_group(app: &mut App, c: char) -> bool {
     let upper = c.to_ascii_uppercase();
     if ('A'..='L').contains(&upper) {
         app.ui_state.standings_group = upper as usize - 'A' as usize;
+        app.ui_state.standings_row = 0;
         return true;
     }
     if let Some(digit) = c.to_digit(10).and_then(|value| usize::try_from(value).ok())
         && (1..=9).contains(&digit)
     {
         app.ui_state.standings_group = digit - 1;
+        app.ui_state.standings_row = 0;
         return true;
     }
     false

@@ -6,6 +6,7 @@ pub mod screen_detail;
 pub mod screen_live;
 pub mod screen_matches;
 pub mod screen_standings;
+pub mod screen_team;
 pub mod screens;
 pub mod theme;
 pub mod toast;
@@ -14,7 +15,7 @@ use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph, Tabs, Wrap};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Tabs};
 
 use crate::app::App;
 use crate::ui::screens::Screen;
@@ -158,22 +159,43 @@ fn render_toasts(app: &App, frame: &mut Frame, area: Rect) {
 
 fn render_help(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme();
-    let lines = vec![
+    let head = |text: &'static str| {
         Line::from(Span::styled(
-            "Keybindings",
+            text,
             Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
-        )),
+        ))
+    };
+    let row = |keys: &'static str, action: &'static str| {
+        Line::from(vec![
+            Span::styled(format!("  {keys:<16}"), Style::new().fg(theme.fg)),
+            Span::styled(action, Style::new().fg(theme.dim)),
+        ])
+    };
+    let lines = vec![
+        head("Global"),
+        row("1–4 / Tab", "switch screen"),
+        row("r", "refresh now"),
+        row("t", "cycle colour theme"),
+        row("? ", "toggle this help"),
+        row("q", "quit"),
         Line::from(""),
-        Line::from("1–4 / Tab / Shift-Tab   switch screen"),
-        Line::from("j / k / ↑ / ↓           move selection"),
-        Line::from("Enter                   open match detail"),
-        Line::from("Esc                     back / close"),
-        Line::from("r                       refresh now"),
-        Line::from("t                       cycle colour theme"),
-        Line::from("?                       toggle this help"),
-        Line::from("q                       quit"),
+        head("Matches & Live"),
+        row("j / k / ↑ / ↓", "move selection"),
+        row("f", "favourites filter (Matches)"),
+        row("Enter", "open match detail"),
+        Line::from(""),
+        head("Standings"),
+        row("h / l / ← / →", "switch group"),
+        row("j / k / ↑ / ↓", "move between teams"),
+        row("Enter", "open team"),
+        row("*", "toggle favourite team"),
+        Line::from(""),
+        head("Overlays"),
+        row("Enter", "team → match detail"),
+        row("j / k", "scroll / move"),
+        row("Esc", "back / close"),
     ];
-    let width = 52u16.min(area.width.saturating_sub(2));
+    let width = 48u16.min(area.width.saturating_sub(2));
     let height = u16::try_from(lines.len()).unwrap_or(1) + 2;
     let rect = screens::widgets::centered(area, width, height);
     frame.render_widget(Clear, rect);
@@ -185,7 +207,6 @@ fn render_help(app: &App, frame: &mut Frame, area: Rect) {
         Paragraph::new(lines)
             .block(block)
             .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true })
             .style(Style::new().fg(theme.fg)),
         rect,
     );

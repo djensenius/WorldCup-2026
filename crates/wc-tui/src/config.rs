@@ -159,4 +159,18 @@ impl Config {
             .iter()
             .any(|f| f.eq_ignore_ascii_case(name) || f.eq_ignore_ascii_case(abbreviation))
     }
+
+    /// Toggle a team's favourite status. If the team (matched by display name or
+    /// abbreviation, case-insensitively) is already a favourite it is removed;
+    /// otherwise its display `name` is added. Returns the new favourite state.
+    pub fn toggle_favorite(&mut self, name: &str, abbreviation: &str) -> bool {
+        if self.is_favorite(name, abbreviation) {
+            self.favorites
+                .retain(|f| !f.eq_ignore_ascii_case(name) && !f.eq_ignore_ascii_case(abbreviation));
+            false
+        } else {
+            self.favorites.push(name.to_owned());
+            true
+        }
+    }
 }

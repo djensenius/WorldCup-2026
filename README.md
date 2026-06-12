@@ -10,11 +10,16 @@ Rust and [ratatui](https://ratatui.rs).
 
 - **Matches** — fixtures by day and stage, status badges, local-timezone
   kickoff times, favourite-team filtering.
-- **Live** — a compact scoreboard of in-play matches that refreshes on a fast
-  cadence.
-- **Standings** — the 12 group tables (A–L) with qualification highlighting.
+- **Live** — a scoreboard of in-play matches followed by the soonest upcoming
+  fixtures, refreshing on a fast cadence.
+- **Standings** — the 12 group tables (A–L) with qualification highlighting,
+  team-row navigation, and `Enter` to open a team view.
+- **Team** — opened from Standings: a team's group summary, recent form, and
+  full fixture list.
 - **Bracket** — the knockout tree (Round of 32 → Final).
 - **Match detail** — goals, cards, substitutions, lineups, and team stats.
+- **Favourite teams** — star teams with `*` from Standings or the team view to
+  highlight and filter them.
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), colour themes, an offline cache, and mouse
   support.
@@ -42,19 +47,20 @@ Requires the toolchain pinned in `rust-toolchain.toml`.
 
 ## Keybindings
 
-| Key                 | Action                              |
-| ------------------- | ----------------------------------- |
-| `1`–`4`             | Jump to a screen by number          |
-| `Tab` / `Shift+Tab` | Next / previous screen              |
-| `j`/`k`, `↓`/`↑`    | Move selection                      |
-| `Enter`             | Open match detail                   |
-| `f`                 | Toggle favourites filter (Matches)  |
-| `h`/`l`, `←`/`→`    | Switch group / round                |
-| `r`                 | Refresh now                         |
-| `t`                 | Cycle colour theme                  |
-| `?`                 | Toggle help                         |
-| `Esc`               | Back / close                        |
-| `q`                 | Quit                                |
+| Key                 | Action                                  |
+| ------------------- | --------------------------------------- |
+| `1`–`4`             | Jump to a screen by number              |
+| `Tab` / `Shift+Tab` | Next / previous screen                  |
+| `j`/`k`, `↓`/`↑`    | Move selection                          |
+| `Enter`             | Open match detail (team view on Standings) |
+| `f`                 | Toggle favourites filter (Matches)      |
+| `*`                 | Toggle favourite team (Standings, Team) |
+| `h`/`l`, `←`/`→`    | Switch group / round                    |
+| `r`                 | Refresh now                             |
+| `t`                 | Cycle colour theme                      |
+| `?`                 | Toggle help                             |
+| `Esc`               | Back / close                            |
+| `q`                 | Quit                                    |
 
 The full list, including per-screen and mouse bindings, is in
 [docs/keybindings.md](docs/keybindings.md).

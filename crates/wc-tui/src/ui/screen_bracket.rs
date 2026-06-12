@@ -29,7 +29,7 @@ struct BracketCell {
 /// Render the bracket screen.
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme();
-    let block = widgets::panel("Bracket", theme);
+    let block = widgets::screen_block("Bracket", "h/l round · j/k match", theme);
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
