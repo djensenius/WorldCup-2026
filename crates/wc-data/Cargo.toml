@@ -1,0 +1,28 @@
+[package]
+name = "wc-data"
+description = "Pluggable data layer for the World Cup 2026 TUI: a normalized domain model and provider backends (ESPN, API-Football, football-data.org)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+reqwest = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+serde_json = { workspace = true }
+wiremock = { workspace = true }

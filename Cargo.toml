@@ -1,0 +1,75 @@
+[workspace]
+resolver = "2"
+members = ["crates/wc-data", "crates/wc-tui"]
+
+[workspace.package]
+version = "0.1.0" # x-release-please-version
+edition = "2024"
+rust-version = "1.95"
+license = "Apache-2.0"
+authors = ["David Jensenius"]
+repository = "https://github.com/djensenius/WorldCup-2026"
+homepage = "https://github.com/djensenius/WorldCup-2026"
+publish = false
+
+[profile.release]
+strip = "symbols"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+match_same_arms = "allow"
+too_many_lines = "allow"
+doc_markdown = "allow"
+missing_const_for_fn = "allow"
+significant_drop_tightening = "allow"
+redundant_clone = "allow"
+use_self = "allow"
+derivable_impls = "allow"
+return_self_not_must_use = "allow"
+multiple_crate_versions = "allow"
+struct_excessive_bools = "allow"
+cast_possible_truncation = "allow"
+cast_sign_loss = "allow"
+cast_possible_wrap = "allow"
+
+[workspace.dependencies]
+# Workspace crates
+wc-data = { path = "crates/wc-data" }
+
+# Serialization + errors
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+time = { version = "0.3", features = ["serde-well-known", "formatting", "parsing", "macros", "local-offset"] }
+toml = "0.8"
+directories = "5"
+
+# TUI + async runtime + CLI
+ratatui = "0.29"
+crossterm = { version = "0.28", features = ["event-stream"] }
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+clap_mangen = "0.2"
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+
+# HTTP client (rustls)
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# Dev-only HTTP mock server for provider integration tests
+wiremock = "0.6"

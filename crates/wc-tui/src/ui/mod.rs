@@ -1,0 +1,149 @@
+//! Top-level rendering: tab bar, body, status bar, toast overlay, and help.
+
+pub mod icons;
+pub mod screen_bracket;
+pub mod screen_detail;
+pub mod screen_live;
+pub mod screen_matches;
+pub mod screen_standings;
+pub mod screens;
+pub mod theme;
+pub mod toast;
+
+use ratatui::Frame;
+use ratatui::layout::{Alignment, Constraint, Layout, Rect};
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Tabs, Wrap};
+
+use crate::app::App;
+use crate::ui::screens::Screen;
+use crate::ui::toast::{Level, Toasts};
+
+/// Render the entire UI for one frame.
+pub fn render(app: &App, frame: &mut Frame) {
+    let areas = Layout::vertical([
+        Constraint::Length(3),
+        Constraint::Min(0),
+        Constraint::Length(1),
+    ])
+    .split(frame.area());
+    let (tabs_area, body_area, status_area) = (areas[0], areas[1], areas[2]);
+
+    render_tabs(app, frame, tabs_area);
+    screens::render(app, frame, body_area);
+    render_status_bar(app, frame, status_area);
+    render_toasts(app, frame, body_area);
+    if app.show_help() {
+        render_help(app, frame, body_area);
+    }
+}
+
+fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
+    let theme = app.theme();
+    let icons = app.icons();
+    let titles = Screen::all().into_iter().enumerate().map(|(index, screen)| {
+        format!("{} {}{}", index + 1, icons.tab(screen), screen.short())
+    });
+    let tabs = Tabs::new(titles)
+        .select(app.screen().index())
+        .style(Style::new().fg(theme.dim))
+        .highlight_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::new().fg(theme.dim))
+                .title(format!(" {}wc26 ", icons.brand()))
+                .title_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD)),
+        );
+    frame.render_widget(tabs, area);
+}
+
+fn render_status_bar(app: &App, frame: &mut Frame, area: Rect) {
+    let theme = app.theme();
+    let mut spans = vec![
+        Span::styled(
+            format!(" {} ", app.provider_name()),
+            Style::new().bg(theme.bg).fg(theme.fg),
+        ),
+        Span::raw("  "),
+    ];
+    if app.is_refreshing() {
+        spans.push(Span::styled("⟳ refreshing", Style::new().fg(theme.warn)));
+        spans.push(Span::raw("  "));
+    }
+    let hint = "q quit · ? help · Tab switch · r refresh · t theme";
+    let used: usize = spans.iter().map(|s| s.content.chars().count()).sum();
+    let pad = usize::from(area.width).saturating_sub(used + hint.chars().count() + 1);
+    spans.push(Span::raw(" ".repeat(pad)));
+    spans.push(Span::styled(hint, Style::new().fg(theme.dim)));
+    frame.render_widget(Paragraph::new(Line::from(spans)), area);
+}
+
+fn render_toasts(app: &App, frame: &mut Frame, area: Rect) {
+    let toasts: &Toasts = app.toasts();
+    if toasts.is_empty() {
+        return;
+    }
+    let theme = app.theme();
+    let lines: Vec<Line> = toasts
+        .iter()
+        .map(|t| {
+            let color = match t.level {
+                Level::Info => theme.accent,
+                Level::Warn => theme.warn,
+                Level::Error => theme.error,
+            };
+            Line::from(Span::styled(format!(" {} ", t.text), Style::new().fg(color)))
+        })
+        .collect();
+    let height = u16::try_from(lines.len()).unwrap_or(1) + 2;
+    let width = area.width.saturating_sub(2).min(60);
+    let rect = Rect {
+        x: area.x + area.width.saturating_sub(width + 1),
+        y: area.y + area.height.saturating_sub(height + 1),
+        width,
+        height,
+    };
+    frame.render_widget(Clear, rect);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::new().fg(theme.dim))
+        .title(" notices ");
+    frame.render_widget(Paragraph::new(lines).block(block), rect);
+}
+
+fn render_help(app: &App, frame: &mut Frame, area: Rect) {
+    let theme = app.theme();
+    let lines = vec![
+        Line::from(Span::styled(
+            "Keybindings",
+            Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
+        )),
+        Line::from(""),
+        Line::from("1–4 / Tab / Shift-Tab   switch screen"),
+        Line::from("j / k / ↑ / ↓           move selection"),
+        Line::from("Enter                   open match detail"),
+        Line::from("Esc                     back / close"),
+        Line::from("r                       refresh now"),
+        Line::from("t                       cycle colour theme"),
+        Line::from("?                       toggle this help"),
+        Line::from("q                       quit"),
+    ];
+    let width = 52u16.min(area.width.saturating_sub(2));
+    let height = u16::try_from(lines.len()).unwrap_or(1) + 2;
+    let rect = screens::widgets::centered(area, width, height);
+    frame.render_widget(Clear, rect);
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::new().fg(theme.accent))
+        .title(" Help ");
+    frame.render_widget(
+        Paragraph::new(lines)
+            .block(block)
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true })
+            .style(Style::new().fg(theme.fg)),
+        rect,
+    );
+}

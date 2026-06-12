@@ -1,0 +1,39 @@
+[package]
+name = "wc-tui"
+description = "Terminal UI for the FIFA World Cup 2026: schedule, standings, knockout bracket, and a live scoreboard."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+publish = false
+default-run = "wc26"
+
+[[bin]]
+name = "wc26"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+wc-data = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+clap = { workspace = true }
+anyhow = { workspace = true }
+time = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+directories = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+tracing-appender = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

@@ -1,0 +1,7 @@
+/target
+**/*.rs.bk
+*.pdb
+.DS_Store
+
+# Local config / cache used during development
+/.wc26-dev
