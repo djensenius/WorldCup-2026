@@ -94,8 +94,18 @@ fn render_status_bar(app: &App, frame: &mut Frame, area: Rect) {
         ),
         Span::raw("  "),
     ];
+    if let Some(stage) = app.current_stage_label() {
+        spans.push(Span::styled(stage, Style::new().fg(theme.accent)));
+        spans.push(Span::raw("  "));
+    }
     if app.is_refreshing() {
         spans.push(Span::styled("⟳ refreshing", Style::new().fg(theme.warn)));
+        spans.push(Span::raw("  "));
+    } else if let Some(age) = app.active_data_age() {
+        spans.push(Span::styled(
+            format!("updated {}s ago", age.as_secs()),
+            Style::new().fg(theme.dim),
+        ));
         spans.push(Span::raw("  "));
     }
     if app.showing_cached() {
@@ -124,7 +134,10 @@ fn render_toasts(app: &App, frame: &mut Frame, area: Rect) {
                 Level::Warn => theme.warn,
                 Level::Error => theme.error,
             };
-            Line::from(Span::styled(format!(" {} ", t.text), Style::new().fg(color)))
+            Line::from(Span::styled(
+                format!(" {} ", t.text),
+                Style::new().fg(color),
+            ))
         })
         .collect();
     let height = u16::try_from(lines.len()).unwrap_or(1) + 2;

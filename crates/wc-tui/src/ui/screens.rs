@@ -48,10 +48,7 @@ impl Screen {
     /// Resolve a screen from a tab index, clamped to range.
     #[must_use]
     pub fn from_index(index: usize) -> Screen {
-        Screen::all()
-            .get(index)
-            .copied()
-            .unwrap_or(Screen::Matches)
+        Screen::all().get(index).copied().unwrap_or(Screen::Matches)
     }
 
     /// Short label used in the tab bar.

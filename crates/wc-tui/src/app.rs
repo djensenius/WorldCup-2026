@@ -6,10 +6,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{
-    KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
-};
-use time::UtcOffset;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use time::{OffsetDateTime, UtcOffset};
 use wc_data::Provider;
 use wc_data::domain::{Bracket, Calendar, Group, Match, MatchDetail};
 
@@ -28,9 +26,9 @@ const TICK: Duration = Duration::from_millis(250);
 /// Scoreboard poll interval while a match is in play.
 const LIVE_POLL: Duration = Duration::from_secs(15);
 /// Scoreboard poll interval when nothing is live.
-const IDLE_POLL: Duration = Duration::from_secs(60);
+const IDLE_POLL: Duration = Duration::from_mins(1);
 /// Poll interval for slow-changing data (standings, bracket, calendar).
-const SLOW_POLL: Duration = Duration::from_secs(300);
+const SLOW_POLL: Duration = Duration::from_mins(5);
 /// Poll interval for an open match-detail view.
 const DETAIL_POLL: Duration = Duration::from_secs(20);
 
@@ -267,9 +265,35 @@ impl App {
         &self.bracket
     }
 
-    /// Competition calendar (stage windows).
-    pub fn calendar(&self) -> &Poller<Calendar> {
-        &self.calendar
+    /// The label of the calendar stage window currently in progress, or the
+    /// next upcoming one, for the status-bar phase indicator.
+    pub fn current_stage_label(&self) -> Option<String> {
+        let calendar = self.calendar.state().value()?;
+        let now = OffsetDateTime::now_utc();
+        if let Some(window) = calendar
+            .stages
+            .iter()
+            .find(|w| (w.start..=w.end).contains(&now))
+        {
+            return Some(window.label.clone());
+        }
+        calendar
+            .stages
+            .iter()
+            .find(|w| w.start > now)
+            .map(|w| format!("Upcoming: {}", w.label))
+    }
+
+    /// Age of the data shown on the active screen, for the freshness indicator.
+    pub fn active_data_age(&self) -> Option<Duration> {
+        if self.detail.is_some() {
+            return self.detail_poller.state().age();
+        }
+        match self.screen {
+            Screen::Matches | Screen::Live => self.scoreboard.state().age(),
+            Screen::Standings => self.standings.state().age(),
+            Screen::Bracket => self.bracket.state().age(),
+        }
     }
 
     /// Match detail for the open overlay.
@@ -337,10 +361,7 @@ impl App {
             return;
         }
         if self.show_help {
-            if matches!(
-                key.code,
-                KeyCode::Esc | KeyCode::Char('?') | KeyCode::Char('q')
-            ) {
+            if matches!(key.code, KeyCode::Esc | KeyCode::Char('?' | 'q')) {
                 self.show_help = false;
             }
             return;
@@ -409,7 +430,11 @@ impl App {
             self.scroll_detail(delta);
             return;
         }
-        let code = if delta > 0 { KeyCode::Down } else { KeyCode::Up };
+        let code = if delta > 0 {
+            KeyCode::Down
+        } else {
+            KeyCode::Up
+        };
         let _ = screens::handle_key(self, KeyEvent::new(code, KeyModifiers::NONE));
     }
 
@@ -428,7 +453,7 @@ impl App {
         self.theme_index = (self.theme_index + 1) % theme::NAMES.len();
         let name = theme::NAMES[self.theme_index];
         self.theme = Theme::from_name(name);
-        self.config.ui.theme = name.to_owned();
+        name.clone_into(&mut self.config.ui.theme);
         match self.config.save_to(&self.config_path) {
             Ok(()) => self.toasts.info(format!("Theme: {name}")),
             Err(err) => self.toasts.warn(format!("Could not save theme: {err}")),
@@ -439,29 +464,33 @@ impl App {
 
     fn on_tick(&mut self) {
         self.toasts.expire();
-        if matches!(self.scoreboard.drain(), Some(Ok(()))) {
-            if let Some(matches) = self.scoreboard.state().value() {
-                self.cache.store(CACHE_SCOREBOARD, matches);
-            }
+        if matches!(self.scoreboard.drain(), Some(Ok(())))
+            && let Some(matches) = self.scoreboard.state().value()
+        {
+            self.cache.store(CACHE_SCOREBOARD, matches);
         }
-        if matches!(self.standings.drain(), Some(Ok(()))) {
-            if let Some(groups) = self.standings.state().value() {
-                self.cache.store(CACHE_STANDINGS, groups);
-            }
+        if matches!(self.standings.drain(), Some(Ok(())))
+            && let Some(groups) = self.standings.state().value()
+        {
+            self.cache.store(CACHE_STANDINGS, groups);
         }
-        if matches!(self.bracket.drain(), Some(Ok(()))) {
-            if let Some(tree) = self.bracket.state().value() {
-                self.cache.store(CACHE_BRACKET, tree);
-            }
+        if matches!(self.bracket.drain(), Some(Ok(())))
+            && let Some(tree) = self.bracket.state().value()
+        {
+            self.cache.store(CACHE_BRACKET, tree);
         }
-        if matches!(self.calendar.drain(), Some(Ok(()))) {
-            if let Some(cal) = self.calendar.state().value() {
-                self.cache.store(CACHE_CALENDAR, cal);
-            }
+        if matches!(self.calendar.drain(), Some(Ok(())))
+            && let Some(cal) = self.calendar.state().value()
+        {
+            self.cache.store(CACHE_CALENDAR, cal);
         }
         self.detail_poller.drain();
 
-        let interval = if self.any_live() { LIVE_POLL } else { IDLE_POLL };
+        let interval = if self.any_live() {
+            LIVE_POLL
+        } else {
+            IDLE_POLL
+        };
         if self.scoreboard.is_due(interval) {
             self.refresh_scoreboard();
         }
@@ -500,9 +529,8 @@ impl App {
 
     fn refresh_scoreboard(&mut self) {
         let provider = Arc::clone(&self.provider);
-        self.scoreboard.refresh(async move {
-            provider.scoreboard(None).await.map_err(|e| e.to_string())
-        });
+        self.scoreboard
+            .refresh(async move { provider.scoreboard(None).await.map_err(|e| e.to_string()) });
     }
 
     fn refresh_standings(&mut self) {

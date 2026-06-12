@@ -56,20 +56,24 @@ async fn run(cli: Cli, local_offset: UtcOffset) -> Result<()> {
         config.provider.kind = provider.to_owned();
     }
     if cli.no_color {
-        config.ui.theme = "high-contrast".to_owned();
+        "high-contrast".clone_into(&mut config.ui.theme);
     }
 
     let _log_guard = logging::init();
 
     let http = Http::new()?;
-    let (provider, startup_warning) = match Provider::from_config(&config.provider_config(), http.clone()) {
-        Ok(provider) => (provider, None),
-        Err(err) => {
-            // Fall back to ESPN (no key required) so the app is always usable.
-            let warning = format!("{err}; falling back to the ESPN provider.");
-            (Provider::Espn(wc_data::backends::EspnProvider::new(http)), Some(warning))
-        }
-    };
+    let (provider, startup_warning) =
+        match Provider::from_config(&config.provider_config(), http.clone()) {
+            Ok(provider) => (provider, None),
+            Err(err) => {
+                // Fall back to ESPN (no key required) so the app is always usable.
+                let warning = format!("{err}; falling back to the ESPN provider.");
+                (
+                    Provider::Espn(wc_data::backends::EspnProvider::new(http)),
+                    Some(warning),
+                )
+            }
+        };
 
     let mut app = App::new(config, config_path, provider, local_offset);
     if let Some(warning) = startup_warning {

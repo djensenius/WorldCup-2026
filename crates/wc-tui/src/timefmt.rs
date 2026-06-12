@@ -4,16 +4,16 @@
 //! any worker threads spawn — the `time` crate refuses to read it concurrently)
 //! and threaded through to these helpers.
 
-use time::{OffsetDateTime, UtcOffset};
 use time::format_description::FormatItem;
 use time::macros::format_description;
+use time::{OffsetDateTime, UtcOffset};
 
 use crate::config::TimezonePref;
 
 const TIME_HM: &[FormatItem<'_>] = format_description!("[hour]:[minute]");
-const DAY_TIME: &[FormatItem<'_>] =
-    format_description!("[weekday repr:short] [hour]:[minute]");
-const DATE_DAY: &[FormatItem<'_>] = format_description!("[weekday repr:short] [month repr:short] [day padding:none]");
+const DAY_TIME: &[FormatItem<'_>] = format_description!("[weekday repr:short] [hour]:[minute]");
+const DATE_DAY: &[FormatItem<'_>] =
+    format_description!("[weekday repr:short] [month repr:short] [day padding:none]");
 
 /// Resolve the display offset for a preference, given the captured local offset.
 #[must_use]

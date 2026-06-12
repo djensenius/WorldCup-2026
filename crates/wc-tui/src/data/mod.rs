@@ -52,6 +52,14 @@ impl<T> Remote<T> {
             _ => None,
         }
     }
+
+    /// How long ago the current value was fetched, if one is loaded.
+    pub fn age(&self) -> Option<Duration> {
+        match self {
+            Remote::Ready { fetched_at, .. } => Some(fetched_at.elapsed()),
+            _ => None,
+        }
+    }
 }
 
 /// Drives a background fetch for a single resource of type `T`.

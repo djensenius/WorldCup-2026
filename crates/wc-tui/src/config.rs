@@ -129,15 +129,15 @@ impl Config {
 
     /// Overlay API keys from the environment when set.
     pub fn merge_env(&mut self) {
-        if let Ok(key) = std::env::var("WC26_API_FOOTBALL_KEY") {
-            if !key.trim().is_empty() {
-                self.provider.api_football_key = Some(key);
-            }
+        if let Ok(key) = std::env::var("WC26_API_FOOTBALL_KEY")
+            && !key.trim().is_empty()
+        {
+            self.provider.api_football_key = Some(key);
         }
-        if let Ok(key) = std::env::var("WC26_FOOTBALL_DATA_KEY") {
-            if !key.trim().is_empty() {
-                self.provider.football_data_key = Some(key);
-            }
+        if let Ok(key) = std::env::var("WC26_FOOTBALL_DATA_KEY")
+            && !key.trim().is_empty()
+        {
+            self.provider.football_data_key = Some(key);
         }
     }
 
@@ -155,8 +155,8 @@ impl Config {
     /// Whether `name` (team display name or abbreviation) is a favourite.
     #[must_use]
     pub fn is_favorite(&self, name: &str, abbreviation: &str) -> bool {
-        self.favorites.iter().any(|f| {
-            f.eq_ignore_ascii_case(name) || f.eq_ignore_ascii_case(abbreviation)
-        })
+        self.favorites
+            .iter()
+            .any(|f| f.eq_ignore_ascii_case(name) || f.eq_ignore_ascii_case(abbreviation))
     }
 }

@@ -57,13 +57,20 @@ pub fn remote_message<T>(
             "Waiting to load…",
             Style::new().fg(theme.dim),
         ))],
-        Remote::Loading => vec![Line::from(Span::styled("Loading…", Style::new().fg(theme.warn)))],
-        Remote::Failed { error, .. } => vec![
+        Remote::Loading => vec![Line::from(Span::styled(
+            "Loading…",
+            Style::new().fg(theme.warn),
+        ))],
+        Remote::Failed { error, at } => vec![
             Line::from(Span::styled(
                 "Could not load data",
                 Style::new().fg(theme.error).add_modifier(Modifier::BOLD),
             )),
             Line::from(Span::styled(error.clone(), Style::new().fg(theme.dim))),
+            Line::from(Span::styled(
+                format!("failed {}s ago — retrying", at.elapsed().as_secs()),
+                Style::new().fg(theme.dim),
+            )),
         ],
         Remote::Ready { value, .. } => when_ready(value),
     };
