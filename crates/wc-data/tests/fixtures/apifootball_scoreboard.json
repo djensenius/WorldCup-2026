@@ -1,0 +1,18 @@
+{
+  "response": [
+    {
+      "fixture": {"id": 1001, "date": "2026-06-12T19:00:00+00:00", "status": {"long": "Not Started", "short": "NS", "elapsed": null}, "venue": {"name": "BMO Field"}},
+      "league": {"round": "Group B - 1"},
+      "teams": {"home": {"id": 206, "name": "Canada", "code": "CAN", "logo": "https://example.test/can.png"}, "away": {"id": 452, "name": "Bosnia-Herzegovina", "code": "BIH", "logo": null}},
+      "goals": {"home": null, "away": null},
+      "score": {"penalty": {"home": null, "away": null}}
+    },
+    {
+      "fixture": {"id": 2001, "date": "2026-06-29T19:00:00+00:00", "status": {"long": "Match Finished", "short": "FT", "elapsed": 90}, "venue": {"name": "MetLife Stadium"}},
+      "league": {"round": "Round of 32"},
+      "teams": {"home": {"id": 1, "name": "Winner Group A", "code": "1A", "logo": null}, "away": {"id": 2, "name": "Runner-up Group B", "code": "2B", "logo": null}},
+      "goals": {"home": 2, "away": 1},
+      "score": {"penalty": {"home": null, "away": null}}
+    }
+  ]
+}

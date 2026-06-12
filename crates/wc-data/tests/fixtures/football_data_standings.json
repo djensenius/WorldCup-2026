@@ -1,0 +1,5 @@
+{
+  "standings": [
+    {"group": "GROUP_A", "table": [{"position": 1, "team": {"id": 203, "name": "Mexico", "tla": "MEX", "crest": null}, "played_games": 1, "won": 1, "draw": 0, "lost": 0, "goals_for": 2, "goals_against": 0, "goal_difference": 2, "points": 3}]}
+  ]
+}

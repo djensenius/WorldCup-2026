@@ -1,0 +1,5 @@
+{
+  "response": [
+    {"time": {"elapsed": 23, "extra": null}, "team": {"id": 206, "name": "Canada", "code": "CAN", "logo": null}, "player": {"name": "Alphonso Davies"}, "assist": {"name": "Jonathan David"}, "type": "Goal", "detail": "Penalty", "comments": null}
+  ]
+}
