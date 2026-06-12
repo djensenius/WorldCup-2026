@@ -1,17 +1,20 @@
 //! Application state and the main event loop.
 
+use std::cell::RefCell;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{
+    KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind,
+};
 use time::UtcOffset;
 use wc_data::Provider;
 use wc_data::domain::{Bracket, Calendar, Group, Match, MatchDetail};
 
 use crate::config::Config;
-use crate::data::{Poller, SharedProvider};
+use crate::data::{Cache, Poller, SharedProvider};
 use crate::event::{AppEvent, EventLoop};
 use crate::tui::Tui;
 use crate::ui;
@@ -30,6 +33,15 @@ const IDLE_POLL: Duration = Duration::from_secs(60);
 const SLOW_POLL: Duration = Duration::from_secs(300);
 /// Poll interval for an open match-detail view.
 const DETAIL_POLL: Duration = Duration::from_secs(20);
+
+/// Cache key for the persisted scoreboard payload.
+const CACHE_SCOREBOARD: &str = "scoreboard";
+/// Cache key for the persisted standings payload.
+const CACHE_STANDINGS: &str = "standings";
+/// Cache key for the persisted knockout-bracket payload.
+const CACHE_BRACKET: &str = "bracket";
+/// Cache key for the persisted competition-calendar payload.
+const CACHE_CALENDAR: &str = "calendar";
 
 /// Navigation target for the match-detail overlay.
 #[derive(Debug, Clone)]
@@ -61,6 +73,14 @@ pub struct ScreenState {
     pub detail_scroll: u16,
 }
 
+/// Recorded screen-space x-ranges of the tab labels, captured during render so
+/// a mouse click on the tab bar can be mapped back to a screen index.
+#[derive(Debug, Default)]
+struct TabHitboxes {
+    row: u16,
+    ranges: Vec<(u16, u16)>,
+}
+
 /// The running application.
 pub struct App {
     config: Config,
@@ -81,6 +101,8 @@ pub struct App {
     bracket: Poller<Bracket>,
     calendar: Poller<Calendar>,
     detail_poller: Poller<MatchDetail>,
+    cache: Cache,
+    tab_hitboxes: RefCell<TabHitboxes>,
 
     /// Mutable per-screen UI state.
     pub ui_state: ScreenState,
@@ -104,6 +126,24 @@ impl App {
         let mut toasts = Toasts::default();
         toasts.info("Welcome to wc26. Press ? for help, q to quit.");
 
+        let cache = Cache::new();
+        let mut scoreboard = Poller::new();
+        if let Some(matches) = cache.load::<Vec<Match>>(CACHE_SCOREBOARD) {
+            scoreboard.seed(matches);
+        }
+        let mut standings = Poller::new();
+        if let Some(groups) = cache.load::<Vec<Group>>(CACHE_STANDINGS) {
+            standings.seed(groups);
+        }
+        let mut bracket = Poller::new();
+        if let Some(tree) = cache.load::<Bracket>(CACHE_BRACKET) {
+            bracket.seed(tree);
+        }
+        let mut calendar = Poller::new();
+        if let Some(cal) = cache.load::<Calendar>(CACHE_CALENDAR) {
+            calendar.seed(cal);
+        }
+
         Self {
             config,
             config_path,
@@ -117,11 +157,13 @@ impl App {
             detail: None,
             show_help: false,
             should_quit: false,
-            scoreboard: Poller::new(),
-            standings: Poller::new(),
-            bracket: Poller::new(),
-            calendar: Poller::new(),
+            scoreboard,
+            standings,
+            bracket,
+            calendar,
             detail_poller: Poller::new(),
+            cache,
+            tab_hitboxes: RefCell::new(TabHitboxes::default()),
             ui_state: ScreenState::default(),
         }
     }
@@ -142,7 +184,7 @@ impl App {
             match events.next().await {
                 AppEvent::Tick => self.on_tick(),
                 AppEvent::Key(key) => self.on_key(key),
-                AppEvent::Mouse(_) => {}
+                AppEvent::Mouse(mouse) => self.on_mouse(mouse),
                 AppEvent::Resize => {}
                 AppEvent::Error(err) => self.toasts.error(err),
             }
@@ -235,6 +277,34 @@ impl App {
         &self.detail_poller
     }
 
+    /// Whether any displayed resource is currently served from the offline
+    /// cache (loaded at startup and not yet refreshed this session).
+    pub fn showing_cached(&self) -> bool {
+        self.scoreboard.is_stale()
+            || self.standings.is_stale()
+            || self.bracket.is_stale()
+            || self.calendar.is_stale()
+    }
+
+    /// Record the tab bar's clickable x-ranges (called by the renderer each
+    /// frame) so a mouse click can be mapped back to a screen. `row` is the
+    /// bar's y coordinate.
+    pub fn set_tab_hitboxes(&self, row: u16, ranges: Vec<(u16, u16)>) {
+        let mut hits = self.tab_hitboxes.borrow_mut();
+        hits.row = row;
+        hits.ranges = ranges;
+    }
+
+    fn tab_at(&self, column: u16, row: u16) -> Option<usize> {
+        let hits = self.tab_hitboxes.borrow();
+        if row != hits.row {
+            return None;
+        }
+        hits.ranges
+            .iter()
+            .position(|&(start, end)| column >= start && column < end)
+    }
+
     // --- navigation invoked by screens ------------------------------------
 
     /// Open the match-detail overlay for a fixture and start loading it.
@@ -316,6 +386,33 @@ impl App {
         let _ = screens::handle_key(self, key);
     }
 
+    fn on_mouse(&mut self, mouse: MouseEvent) {
+        if self.show_help {
+            return;
+        }
+        match mouse.kind {
+            MouseEventKind::ScrollDown => self.on_scroll(1),
+            MouseEventKind::ScrollUp => self.on_scroll(-1),
+            MouseEventKind::Down(MouseButton::Left) if self.detail.is_none() => {
+                if let Some(index) = self.tab_at(mouse.column, mouse.row) {
+                    self.screen = Screen::from_index(index);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Translate a mouse-wheel notch into movement by scrolling the detail view
+    /// when open, otherwise reusing the active screen's up/down key handling.
+    fn on_scroll(&mut self, delta: i16) {
+        if self.detail.is_some() {
+            self.scroll_detail(delta);
+            return;
+        }
+        let code = if delta > 0 { KeyCode::Down } else { KeyCode::Up };
+        let _ = screens::handle_key(self, KeyEvent::new(code, KeyModifiers::NONE));
+    }
+
     fn next_screen(&mut self) {
         let next = (self.screen.index() + 1) % Screen::all().len();
         self.screen = Screen::from_index(next);
@@ -342,10 +439,26 @@ impl App {
 
     fn on_tick(&mut self) {
         self.toasts.expire();
-        self.scoreboard.drain();
-        self.standings.drain();
-        self.bracket.drain();
-        self.calendar.drain();
+        if matches!(self.scoreboard.drain(), Some(Ok(()))) {
+            if let Some(matches) = self.scoreboard.state().value() {
+                self.cache.store(CACHE_SCOREBOARD, matches);
+            }
+        }
+        if matches!(self.standings.drain(), Some(Ok(()))) {
+            if let Some(groups) = self.standings.state().value() {
+                self.cache.store(CACHE_STANDINGS, groups);
+            }
+        }
+        if matches!(self.bracket.drain(), Some(Ok(()))) {
+            if let Some(tree) = self.bracket.state().value() {
+                self.cache.store(CACHE_BRACKET, tree);
+            }
+        }
+        if matches!(self.calendar.drain(), Some(Ok(()))) {
+            if let Some(cal) = self.calendar.state().value() {
+                self.cache.store(CACHE_CALENDAR, cal);
+            }
+        }
         self.detail_poller.drain();
 
         let interval = if self.any_live() { LIVE_POLL } else { IDLE_POLL };

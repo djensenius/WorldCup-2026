@@ -42,21 +42,47 @@ pub fn render(app: &App, frame: &mut Frame) {
 fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme();
     let icons = app.icons();
-    let titles = Screen::all().into_iter().enumerate().map(|(index, screen)| {
-        format!("{} {}{}", index + 1, icons.tab(screen), screen.short())
-    });
+    let titles: Vec<String> = Screen::all()
+        .into_iter()
+        .enumerate()
+        .map(|(index, screen)| format!("{} {}{}", index + 1, icons.tab(screen), screen.short()))
+        .collect();
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::new().fg(theme.dim))
+        .title(format!(" {}wc26 ", icons.brand()))
+        .title_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD));
+    record_tab_hitboxes(app, block.inner(area), &titles);
     let tabs = Tabs::new(titles)
         .select(app.screen().index())
         .style(Style::new().fg(theme.dim))
         .highlight_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD))
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::new().fg(theme.dim))
-                .title(format!(" {}wc26 ", icons.brand()))
-                .title_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD)),
-        );
+        .block(block);
     frame.render_widget(tabs, area);
+}
+
+/// Replicate `Tabs`' layout (a one-column pad on each side of every label and a
+/// single-column divider between labels) to record each tab's clickable
+/// x-range, so a mouse click on the bar can be mapped back to a screen.
+fn record_tab_hitboxes(app: &App, inner: Rect, titles: &[String]) {
+    let mut ranges = Vec::with_capacity(titles.len());
+    let right = inner.right();
+    let mut x = inner.left();
+    for (index, title) in titles.iter().enumerate() {
+        if x >= right {
+            break;
+        }
+        let start = x;
+        x = x.saturating_add(1); // left padding
+        let width = u16::try_from(Line::from(title.as_str()).width()).unwrap_or(0);
+        x = x.saturating_add(width).min(right);
+        x = x.saturating_add(1).min(right); // right padding
+        ranges.push((start, x));
+        if index + 1 < titles.len() {
+            x = x.saturating_add(1).min(right); // divider
+        }
+    }
+    app.set_tab_hitboxes(inner.top(), ranges);
 }
 
 fn render_status_bar(app: &App, frame: &mut Frame, area: Rect) {
@@ -70,6 +96,10 @@ fn render_status_bar(app: &App, frame: &mut Frame, area: Rect) {
     ];
     if app.is_refreshing() {
         spans.push(Span::styled("⟳ refreshing", Style::new().fg(theme.warn)));
+        spans.push(Span::raw("  "));
+    }
+    if app.showing_cached() {
+        spans.push(Span::styled("● cached", Style::new().fg(theme.dim)));
         spans.push(Span::raw("  "));
     }
     let hint = "q quit · ? help · Tab switch · r refresh · t theme";

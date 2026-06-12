@@ -5,6 +5,10 @@
 //! channel, so rendering never blocks on the network. A reload keeps the
 //! previous `Ready` value visible while a refresh is in flight.
 
+mod cache;
+
+pub use cache::Cache;
+
 use std::future::Future;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -60,6 +64,7 @@ pub struct Poller<T> {
     rx: Option<UnboundedReceiver<Result<T, String>>>,
     in_flight: bool,
     last_refresh: Option<Instant>,
+    from_cache: bool,
 }
 
 impl<T> Default for Poller<T> {
@@ -69,6 +74,7 @@ impl<T> Default for Poller<T> {
             rx: None,
             in_flight: false,
             last_refresh: None,
+            from_cache: false,
         }
     }
 }
@@ -88,6 +94,23 @@ impl<T: Send + 'static> Poller<T> {
     /// Whether a fetch is currently in flight.
     pub fn is_refreshing(&self) -> bool {
         self.in_flight
+    }
+
+    /// Seed the state with a value restored from the on-disk cache. The value
+    /// is shown immediately and flagged stale (see [`Poller::is_stale`]), and
+    /// `last_refresh` is left unset so a fresh fetch is considered due at once.
+    pub fn seed(&mut self, value: T) {
+        self.state = Remote::Ready {
+            value,
+            fetched_at: Instant::now(),
+        };
+        self.from_cache = true;
+    }
+
+    /// Whether the currently displayed value came from the on-disk cache and
+    /// has not yet been refreshed from the network this session.
+    pub fn is_stale(&self) -> bool {
+        self.from_cache && matches!(self.state, Remote::Ready { .. })
     }
 
     /// Whether a re-poll is due: not currently fetching and either never
@@ -121,28 +144,44 @@ impl<T: Send + 'static> Poller<T> {
     }
 
     /// Apply a completed fetch result, if any. Call once per tick.
-    pub fn drain(&mut self) {
-        let Some(rx) = &mut self.rx else { return };
+    ///
+    /// Returns `None` when nothing was applied this tick, `Some(Ok(()))` when a
+    /// fresh value was stored, and `Some(Err(message))` when the fetch failed.
+    /// On failure a previously loaded value is kept visible (so a transient
+    /// error or an offline refresh does not blank the screen); the `Failed`
+    /// state is only entered when there is no prior value to show.
+    pub fn drain(&mut self) -> Option<Result<(), String>> {
+        let rx = self.rx.as_mut()?;
         match rx.try_recv() {
             Ok(result) => {
                 self.in_flight = false;
                 self.rx = None;
                 self.last_refresh = Some(Instant::now());
-                self.state = match result {
-                    Ok(value) => Remote::Ready {
-                        value,
-                        fetched_at: Instant::now(),
-                    },
-                    Err(error) => Remote::Failed {
-                        error,
-                        at: Instant::now(),
-                    },
-                };
+                match result {
+                    Ok(value) => {
+                        self.from_cache = false;
+                        self.state = Remote::Ready {
+                            value,
+                            fetched_at: Instant::now(),
+                        };
+                        Some(Ok(()))
+                    }
+                    Err(error) => {
+                        if !matches!(self.state, Remote::Ready { .. }) {
+                            self.state = Remote::Failed {
+                                error: error.clone(),
+                                at: Instant::now(),
+                            };
+                        }
+                        Some(Err(error))
+                    }
+                }
             }
-            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Empty) => None,
             Err(TryRecvError::Disconnected) => {
                 self.in_flight = false;
                 self.rx = None;
+                None
             }
         }
     }
