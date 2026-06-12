@@ -270,7 +270,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) -> bool {
             app.ui_state.standings_row = 0;
             true
         }
-        KeyCode::Char('l') | KeyCode::Right | KeyCode::Tab => {
+        KeyCode::Char('l') | KeyCode::Right => {
             app.ui_state.standings_group = (app.ui_state.standings_group + 1) % GROUP_COUNT;
             app.ui_state.standings_row = 0;
             true

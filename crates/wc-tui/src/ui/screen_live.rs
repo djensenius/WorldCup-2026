@@ -104,7 +104,7 @@ fn live_matches(matches: &[Match]) -> Vec<&Match> {
         .iter()
         .filter(|m| m.status.is_live())
         .collect::<Vec<_>>();
-    live.sort_by_key(|m| (m.kickoff, m.id.clone()));
+    live.sort_by(|a, b| a.kickoff.cmp(&b.kickoff).then_with(|| a.id.cmp(&b.id)));
     live
 }
 
@@ -113,7 +113,7 @@ fn upcoming_matches(matches: &[Match]) -> Vec<&Match> {
         .iter()
         .filter(|m| matches!(m.status, MatchStatus::Scheduled))
         .collect::<Vec<_>>();
-    upcoming.sort_by_key(|m| (m.kickoff, m.id.clone()));
+    upcoming.sort_by(|a, b| a.kickoff.cmp(&b.kickoff).then_with(|| a.id.cmp(&b.id)));
     upcoming.truncate(UPCOMING_LIMIT);
     upcoming
 }

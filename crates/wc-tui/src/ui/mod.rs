@@ -167,13 +167,13 @@ fn render_help(app: &App, frame: &mut Frame, area: Rect) {
     };
     let row = |keys: &'static str, action: &'static str| {
         Line::from(vec![
-            Span::styled(format!("  {keys:<16}"), Style::new().fg(theme.fg)),
+            Span::styled(format!("  {keys:<18}"), Style::new().fg(theme.fg)),
             Span::styled(action, Style::new().fg(theme.dim)),
         ])
     };
     let lines = vec![
         head("Global"),
-        row("1–4 / Tab", "switch screen"),
+        row("1–4 / Tab / ⇧Tab", "switch screen"),
         row("r", "refresh now"),
         row("t", "cycle colour theme"),
         row("? ", "toggle this help"),
