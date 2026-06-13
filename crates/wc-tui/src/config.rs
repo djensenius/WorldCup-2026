@@ -56,7 +56,8 @@ pub struct UiSettings {
     pub theme: String,
     /// Use Nerd Font glyphs for icons.
     pub nerd_fonts: bool,
-    /// Show colored ASCII-art flags.
+    /// Show national flags on the Live card (inline images on terminals with
+    /// graphics support, half-blocks otherwise).
     pub show_flags: bool,
     /// How to display kickoff times.
     pub timezone: TimezonePref,
