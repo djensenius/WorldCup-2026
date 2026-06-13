@@ -226,12 +226,21 @@ fn team_name_line(app: &App, team: &Team, width: u16, theme: &Theme) -> Line<'st
     } else {
         Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
     };
-    let name = if team.name.chars().count() <= usize::from(width) || team.abbreviation.is_empty() {
-        team.name.clone()
+    Line::from(Span::styled(
+        display_name(&team.name, &team.abbreviation, width),
+        style,
+    ))
+}
+
+/// The label to show for a team in `width` cells: the full name when it is
+/// non-empty and fits, otherwise the abbreviation when available, else the name.
+fn display_name(name: &str, abbreviation: &str, width: u16) -> String {
+    let name_fits = !name.is_empty() && name.chars().count() <= usize::from(width);
+    if name_fits || abbreviation.is_empty() {
+        name.to_owned()
     } else {
-        team.abbreviation.clone()
-    };
-    Line::from(Span::styled(name, style))
+        abbreviation.to_owned()
+    }
 }
 
 /// Width in cells of a big-glyph string (each glyph is 4 wide, 1-cell spaced).
@@ -590,6 +599,26 @@ mod tests {
         let (cols, rows) = flag_dims(Rect::new(0, 0, 70, 60), score_w);
         assert!(rows < MAX_FLAG_ROWS);
         assert!(cols * 2 + FLAG_GAP * 2 + score_w <= 70);
+    }
+
+    #[test]
+    fn display_name_prefers_abbreviation_when_name_is_empty() {
+        assert_eq!(display_name("", "CAN", 20), "CAN");
+    }
+
+    #[test]
+    fn display_name_uses_full_name_when_it_fits() {
+        assert_eq!(display_name("Canada", "CAN", 20), "Canada");
+    }
+
+    #[test]
+    fn display_name_falls_back_to_abbreviation_when_too_long() {
+        assert_eq!(display_name("Switzerland", "SUI", 6), "SUI");
+    }
+
+    #[test]
+    fn display_name_keeps_name_when_no_abbreviation() {
+        assert_eq!(display_name("Switzerland", "", 6), "Switzerland");
     }
 
     #[test]
