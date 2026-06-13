@@ -7,7 +7,9 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 
 use crate::app::App;
-use crate::ui::{screen_bracket, screen_detail, screen_live, screen_matches, screen_standings};
+use crate::ui::{
+    screen_bracket, screen_detail, screen_live, screen_matches, screen_standings, screen_team,
+};
 
 /// The top-level screens, in tab order.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,10 +65,14 @@ impl Screen {
     }
 }
 
-/// Render the body for the active screen (or the match-detail overlay).
+/// Render the body for the active screen (or the match-detail/team overlay).
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     if app.detail().is_some() {
         screen_detail::render(app, frame, area);
+        return;
+    }
+    if app.team().is_some() {
+        screen_team::render(app, frame, area);
         return;
     }
     match app.screen() {
@@ -81,6 +87,9 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
 pub fn handle_key(app: &mut App, key: KeyEvent) -> bool {
     if app.detail().is_some() {
         return screen_detail::handle_key(app, key);
+    }
+    if app.team().is_some() {
+        return screen_team::handle_key(app, key);
     }
     match app.screen() {
         Screen::Matches => screen_matches::handle_key(app, key),

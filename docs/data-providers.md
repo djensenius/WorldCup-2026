@@ -78,10 +78,18 @@ kind = "espn"
 # football_data_key = "..."  # prefer WC26_FOOTBALL_DATA_KEY
 
 [ui]
-# Theme name; cycle at runtime with `t`.
+# Theme name; cycle at runtime with `t`. One of: world-night, world-day,
+# pitch, high-contrast, catppuccin-latte, catppuccin-frappe,
+# catppuccin-macchiato, catppuccin-mocha, canada.
 theme = "world-night"
 # Use Nerd Font glyphs for icons.
 nerd_fonts = false
+# Show national flags: real images on the Live card and the
+# Matches/Standings/Team lists (graphics-capable terminals), with small colored
+# half-blocks as the fallback elsewhere. Toggle at runtime with `f`. Graphics
+# support is auto-detected; force it with the WC26_GRAPHICS env var
+# (kitty|iterm2|sixel|halfblocks|off).
+show_flags = true
 # Kickoff display: "local" (default) or "utc". A fixed whole-hour offset
 # from UTC is also supported.
 timezone = "local"

@@ -56,6 +56,11 @@ pub struct UiSettings {
     pub theme: String,
     /// Use Nerd Font glyphs for icons.
     pub nerd_fonts: bool,
+    /// Show national flags: a large pair of images on the Live card and small
+    /// flags beside teams in the Matches, Standings, and Team lists. Real images
+    /// on terminals with graphics support; the small list flags fall back to
+    /// colored half-blocks elsewhere.
+    pub show_flags: bool,
     /// How to display kickoff times.
     pub timezone: TimezonePref,
 }
@@ -85,6 +90,7 @@ impl Default for UiSettings {
         Self {
             theme: "world-night".to_owned(),
             nerd_fonts: false,
+            show_flags: true,
             timezone: TimezonePref::default(),
         }
     }
@@ -158,5 +164,19 @@ impl Config {
         self.favorites
             .iter()
             .any(|f| f.eq_ignore_ascii_case(name) || f.eq_ignore_ascii_case(abbreviation))
+    }
+
+    /// Toggle a team's favourite status. If the team (matched by display name or
+    /// abbreviation, case-insensitively) is already a favourite it is removed;
+    /// otherwise its display `name` is added. Returns the new favourite state.
+    pub fn toggle_favorite(&mut self, name: &str, abbreviation: &str) -> bool {
+        if self.is_favorite(name, abbreviation) {
+            self.favorites
+                .retain(|f| !f.eq_ignore_ascii_case(name) && !f.eq_ignore_ascii_case(abbreviation));
+            false
+        } else {
+            self.favorites.push(name.to_owned());
+            true
+        }
     }
 }

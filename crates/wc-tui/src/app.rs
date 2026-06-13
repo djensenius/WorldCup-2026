@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use ratatui::layout::Size;
 use time::{OffsetDateTime, UtcOffset};
 use wc_data::Provider;
 use wc_data::domain::{Bracket, Calendar, Group, Match, MatchDetail};
@@ -16,6 +17,7 @@ use crate::data::{Cache, Poller, SharedProvider};
 use crate::event::{AppEvent, EventLoop};
 use crate::tui::Tui;
 use crate::ui;
+use crate::ui::flag_image::FlagStore;
 use crate::ui::icons::Icons;
 use crate::ui::screens::{self, Screen};
 use crate::ui::theme::{self, Theme};
@@ -41,6 +43,24 @@ const CACHE_BRACKET: &str = "bracket";
 /// Cache key for the persisted competition-calendar payload.
 const CACHE_CALENDAR: &str = "calendar";
 
+/// Fingerprint of the on-screen view identity, used to decide when to clear the
+/// terminal so stale graphics-protocol flag images don't persist (see
+/// [`App::view_signature`]).
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct ViewSignature {
+    screen: usize,
+    detail: bool,
+    team: bool,
+    help: bool,
+    live_selected: usize,
+    matches_selected: usize,
+    standings_group: usize,
+    team_selected: usize,
+    show_flags: bool,
+    width: u16,
+    height: u16,
+}
+
 /// Navigation target for the match-detail overlay.
 #[derive(Debug, Clone)]
 pub struct DetailNav {
@@ -50,6 +70,19 @@ pub struct DetailNav {
     pub label: String,
 }
 
+/// Navigation target for the team overlay (a team's standing, form, fixtures).
+#[derive(Debug, Clone)]
+pub struct TeamNav {
+    /// Provider team id, used to match fixtures and the standings row.
+    pub team_id: String,
+    /// Team display name.
+    pub name: String,
+    /// Team short code.
+    pub abbreviation: String,
+    /// Group letter the team belongs to, when known.
+    pub group: Option<String>,
+}
+
 /// Mutable per-screen UI state (selections, scroll, filters). Screens read and
 /// write these directly; centralising them here keeps the screen modules free
 /// of their own state plumbing.
@@ -57,12 +90,19 @@ pub struct DetailNav {
 pub struct ScreenState {
     /// Selected row on the Matches screen.
     pub matches_selected: usize,
+    /// Whether [`Self::matches_selected`] has been seeded to the current/next
+    /// game yet. Done once, the first time scoreboard data is available.
+    pub matches_selected_initialized: bool,
     /// Whether the Matches screen is filtered to favourites only.
     pub matches_favorites_only: bool,
     /// Selected row on the Live screen.
     pub live_selected: usize,
     /// Selected group index (0–11) on the Standings screen.
     pub standings_group: usize,
+    /// Selected team row within the current standings group.
+    pub standings_row: usize,
+    /// Selected fixture row in the team overlay.
+    pub team_selected: usize,
     /// Selected round on the Bracket screen.
     pub bracket_round: usize,
     /// Selected match within the bracket round.
@@ -91,6 +131,7 @@ pub struct App {
     local_offset: UtcOffset,
     screen: Screen,
     detail: Option<DetailNav>,
+    team: Option<TeamNav>,
     show_help: bool,
     should_quit: bool,
 
@@ -99,8 +140,11 @@ pub struct App {
     bracket: Poller<Bracket>,
     calendar: Poller<Calendar>,
     detail_poller: Poller<MatchDetail>,
+    live_focus: Poller<MatchDetail>,
+    live_focus_id: Option<String>,
     cache: Cache,
     tab_hitboxes: RefCell<TabHitboxes>,
+    flags: Option<RefCell<FlagStore>>,
 
     /// Mutable per-screen UI state.
     pub ui_state: ScreenState,
@@ -114,6 +158,7 @@ impl App {
         config_path: PathBuf,
         provider: Provider,
         local_offset: UtcOffset,
+        flags: Option<FlagStore>,
     ) -> Self {
         let theme_index = theme::NAMES
             .iter()
@@ -153,6 +198,7 @@ impl App {
             local_offset,
             screen: Screen::Matches,
             detail: None,
+            team: None,
             show_help: false,
             should_quit: false,
             scoreboard,
@@ -160,8 +206,11 @@ impl App {
             bracket,
             calendar,
             detail_poller: Poller::new(),
+            live_focus: Poller::new(),
+            live_focus_id: None,
             cache,
             tab_hitboxes: RefCell::new(TabHitboxes::default()),
+            flags: flags.map(RefCell::new),
             ui_state: ScreenState::default(),
         }
     }
@@ -177,21 +226,76 @@ impl App {
     /// Returns an error only if drawing to the terminal fails.
     pub async fn run(mut self, terminal: &mut Tui) -> Result<()> {
         let mut events = EventLoop::new(TICK);
+        let mut last_sig = self.view_signature(terminal.size()?);
         terminal.draw(|frame| ui::render(&self, frame))?;
         loop {
-            match events.next().await {
+            // Only redraw when something actually changed. Redrawing on every
+            // idle tick re-transmits every flag image (a full image escape per
+            // frame), which makes them flash on graphics terminals.
+            let redraw = match events.next().await {
                 AppEvent::Tick => self.on_tick(),
-                AppEvent::Key(key) => self.on_key(key),
-                AppEvent::Mouse(mouse) => self.on_mouse(mouse),
-                AppEvent::Resize => {}
-                AppEvent::Error(err) => self.toasts.error(err),
-            }
+                AppEvent::Key(key) => {
+                    self.on_key(key);
+                    true
+                }
+                AppEvent::Mouse(mouse) => {
+                    self.on_mouse(mouse);
+                    true
+                }
+                AppEvent::Resize => true,
+                AppEvent::Error(err) => {
+                    self.toasts.error(err);
+                    true
+                }
+            };
             if self.should_quit {
                 break;
             }
-            terminal.draw(|frame| ui::render(&self, frame))?;
+            if redraw {
+                // Flag images (the Live card and the inline list flags) are
+                // drawn through a terminal graphics protocol, which ratatui's
+                // cell diff cannot erase. Whenever the view identity changes
+                // (tab, overlay, selected match, list scroll, flag toggle,
+                // resize) clear first so stale images don't bleed across tabs or
+                // smear as a list scrolls. Only needed when real images are
+                // active; swatch/text views diff cleanly, so they never flash.
+                let sig = self.view_signature(terminal.size()?);
+                if sig != last_sig {
+                    if self.images_active() {
+                        terminal.clear()?;
+                    }
+                    last_sig = sig;
+                }
+                terminal.draw(|frame| ui::render(&self, frame))?;
+            }
         }
         Ok(())
+    }
+
+    /// A fingerprint of everything that decides which view — and therefore which
+    /// terminal-graphics flag images — is on screen. Used to clear the terminal
+    /// when it changes (see [`Self::run`]).
+    fn view_signature(&self, size: Size) -> ViewSignature {
+        ViewSignature {
+            screen: self.screen.index(),
+            detail: self.detail.is_some(),
+            team: self.team.is_some(),
+            help: self.show_help,
+            live_selected: self.ui_state.live_selected,
+            matches_selected: self.ui_state.matches_selected,
+            standings_group: self.ui_state.standings_group,
+            team_selected: self.ui_state.team_selected,
+            show_flags: self.config.ui.show_flags,
+            width: size.width,
+            height: size.height,
+        }
+    }
+
+    /// Whether real flag images (not half-block swatches) are being drawn: flags
+    /// are enabled and the terminal has a graphics protocol. Only then does a
+    /// view change need a full clear to erase stale images.
+    fn images_active(&self) -> bool {
+        self.config.ui.show_flags && self.flags.is_some()
     }
 
     // --- accessors used by the UI -----------------------------------------
@@ -204,6 +308,11 @@ impl App {
     /// The icon set.
     pub fn icons(&self) -> Icons {
         self.icons
+    }
+
+    /// The flag-image store, when terminal graphics are enabled.
+    pub fn flags(&self) -> Option<&RefCell<FlagStore>> {
+        self.flags.as_ref()
     }
 
     /// The loaded configuration.
@@ -236,6 +345,11 @@ impl App {
         self.detail.as_ref()
     }
 
+    /// The active team overlay target, if open.
+    pub fn team(&self) -> Option<&TeamNav> {
+        self.team.as_ref()
+    }
+
     /// The active provider's display name.
     pub fn provider_name(&self) -> &'static str {
         self.provider.name()
@@ -248,6 +362,7 @@ impl App {
             || self.bracket.is_refreshing()
             || self.calendar.is_refreshing()
             || self.detail_poller.is_refreshing()
+            || self.live_focus.is_refreshing()
     }
 
     /// Scoreboard data (used by Matches and Live).
@@ -285,12 +400,26 @@ impl App {
     }
 
     /// Age of the data shown on the active screen, for the freshness indicator.
+    /// When the view is driven by more than one poller (e.g. the Live card also
+    /// shows the focused match's timeline, the team overlay also reads the
+    /// standings), report the *oldest* age so the indicator never looks fresher
+    /// than the stalest thing on screen.
     pub fn active_data_age(&self) -> Option<Duration> {
         if self.detail.is_some() {
             return self.detail_poller.state().age();
         }
+        if self.team.is_some() {
+            return oldest([self.scoreboard.state().age(), self.standings.state().age()]);
+        }
         match self.screen {
-            Screen::Matches | Screen::Live => self.scoreboard.state().age(),
+            Screen::Matches => self.scoreboard.state().age(),
+            // The Live card only consults the focused-match timeline when a match
+            // is actually in play; otherwise it shows upcoming fixtures driven by
+            // the scoreboard alone, so a stale `live_focus` must not count.
+            Screen::Live if self.any_live() => {
+                oldest([self.scoreboard.state().age(), self.live_focus.state().age()])
+            }
+            Screen::Live => self.scoreboard.state().age(),
             Screen::Standings => self.standings.state().age(),
             Screen::Bracket => self.bracket.state().age(),
         }
@@ -299,6 +428,25 @@ impl App {
     /// Match detail for the open overlay.
     pub fn detail_state(&self) -> &Poller<MatchDetail> {
         &self.detail_poller
+    }
+
+    /// Live detail (timeline) for the match focused on the Live screen.
+    pub fn live_focus(&self) -> &Poller<MatchDetail> {
+        &self.live_focus
+    }
+
+    /// Toggle the colored flags on/off and persist the choice.
+    pub fn toggle_flags(&mut self) {
+        self.config.ui.show_flags = !self.config.ui.show_flags;
+        let state = if self.config.ui.show_flags {
+            "on"
+        } else {
+            "off"
+        };
+        match self.config.save_to(&self.config_path) {
+            Ok(()) => self.toasts.info(format!("Flags {state}")),
+            Err(err) => self.toasts.warn(format!("Could not save setting: {err}")),
+        }
     }
 
     /// Whether any displayed resource is currently served from the offline
@@ -347,6 +495,44 @@ impl App {
         self.detail = None;
     }
 
+    /// Open the team overlay for a team and reset its selection.
+    pub fn open_team(
+        &mut self,
+        team_id: impl Into<String>,
+        name: impl Into<String>,
+        abbreviation: impl Into<String>,
+        group: Option<String>,
+    ) {
+        self.team = Some(TeamNav {
+            team_id: team_id.into(),
+            name: name.into(),
+            abbreviation: abbreviation.into(),
+            group,
+        });
+        self.ui_state.team_selected = 0;
+    }
+
+    /// Close the team overlay.
+    pub fn close_team(&mut self) {
+        self.team = None;
+    }
+
+    /// Toggle a team's favourite status, persist the config, and notify.
+    pub fn toggle_favorite(&mut self, name: &str, abbreviation: &str) {
+        let now_favorite = self.config.toggle_favorite(name, abbreviation);
+        let message = if now_favorite {
+            format!("{} Favourited {name}", self.icons.star())
+        } else {
+            format!("Removed {name} from favourites")
+        };
+        match self.config.save_to(&self.config_path) {
+            Ok(()) => self.toasts.info(message),
+            Err(err) => self
+                .toasts
+                .warn(format!("Could not save favourites: {err}")),
+        }
+    }
+
     /// Scroll the detail overlay by `delta` lines (clamped at zero).
     pub fn scroll_detail(&mut self, delta: i16) {
         let next = i32::from(self.ui_state.detail_scroll) + i32::from(delta);
@@ -378,6 +564,8 @@ impl App {
             KeyCode::Esc => {
                 if self.detail.is_some() {
                     self.close_detail();
+                } else if self.team.is_some() {
+                    self.close_team();
                 }
                 return;
             }
@@ -389,15 +577,15 @@ impl App {
                 self.cycle_theme();
                 return;
             }
-            KeyCode::Tab if self.detail.is_none() => {
+            KeyCode::Tab if self.detail.is_none() && self.team.is_none() => {
                 self.next_screen();
                 return;
             }
-            KeyCode::BackTab if self.detail.is_none() => {
+            KeyCode::BackTab if self.detail.is_none() && self.team.is_none() => {
                 self.prev_screen();
                 return;
             }
-            KeyCode::Char(c @ '1'..='4') if self.detail.is_none() => {
+            KeyCode::Char(c @ '1'..='4') if self.detail.is_none() && self.team.is_none() => {
                 let index = c as usize - '1' as usize;
                 self.screen = Screen::from_index(index);
                 return;
@@ -414,7 +602,9 @@ impl App {
         match mouse.kind {
             MouseEventKind::ScrollDown => self.on_scroll(1),
             MouseEventKind::ScrollUp => self.on_scroll(-1),
-            MouseEventKind::Down(MouseButton::Left) if self.detail.is_none() => {
+            MouseEventKind::Down(MouseButton::Left)
+                if self.detail.is_none() && self.team.is_none() =>
+            {
                 if let Some(index) = self.tab_at(mouse.column, mouse.row) {
                     self.screen = Screen::from_index(index);
                 }
@@ -462,29 +652,82 @@ impl App {
 
     // --- polling ----------------------------------------------------------
 
-    fn on_tick(&mut self) {
-        self.toasts.expire();
-        if matches!(self.scoreboard.drain(), Some(Ok(())))
-            && let Some(matches) = self.scoreboard.state().value()
-        {
-            self.cache.store(CACHE_SCOREBOARD, matches);
+    /// Process a tick: expire toasts, drain pollers, and schedule refreshes.
+    /// Returns `true` when something visible changed and the UI should redraw.
+    fn on_tick(&mut self) -> bool {
+        let mut changed = self.toasts.expire();
+        if let Some(result) = self.scoreboard.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(matches) = self.scoreboard.state().value()
+            {
+                self.cache.store(CACHE_SCOREBOARD, matches);
+            }
         }
-        if matches!(self.standings.drain(), Some(Ok(())))
-            && let Some(groups) = self.standings.state().value()
+        // Once the schedule is available, default the Matches selection to the
+        // current (or next) game rather than the first fixture of the tournament.
+        if !self.ui_state.matches_selected_initialized
+            && let Some(index) = self
+                .scoreboard
+                .state()
+                .value()
+                .map(|matches| ui::screen_matches::default_selected_index(self, matches))
         {
-            self.cache.store(CACHE_STANDINGS, groups);
+            self.ui_state.matches_selected = index;
+            self.ui_state.matches_selected_initialized = true;
+            changed = true;
         }
-        if matches!(self.bracket.drain(), Some(Ok(())))
-            && let Some(tree) = self.bracket.state().value()
-        {
-            self.cache.store(CACHE_BRACKET, tree);
+        if let Some(result) = self.standings.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(groups) = self.standings.state().value()
+            {
+                self.cache.store(CACHE_STANDINGS, groups);
+            }
         }
-        if matches!(self.calendar.drain(), Some(Ok(())))
-            && let Some(cal) = self.calendar.state().value()
-        {
-            self.cache.store(CACHE_CALENDAR, cal);
+        if let Some(result) = self.bracket.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(tree) = self.bracket.state().value()
+            {
+                self.cache.store(CACHE_BRACKET, tree);
+            }
         }
-        self.detail_poller.drain();
+        if let Some(result) = self.calendar.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(cal) = self.calendar.state().value()
+            {
+                self.cache.store(CACHE_CALENDAR, cal);
+            }
+        }
+        if self.detail_poller.drain().is_some() {
+            changed = true;
+        }
+        if self.live_focus.drain().is_some() {
+            changed = true;
+        }
+
+        // Starting any poll flips the "⟳ refreshing" indicator on, so redraw
+        // once when that happens (and again when the data drains in). Capture
+        // the state before the live-focus poll too, so its refreshes are also
+        // reflected. This is a handful of redraws per poll interval, not per tick.
+        let refreshing_before = self.is_refreshing();
+
+        // Keep the Live screen's "most recent event" fresh for the focused
+        // in-play match (only while that screen is open).
+        if matches!(self.screen, Screen::Live) && self.detail.is_none() && self.team.is_none() {
+            let focus = ui::screen_live::focused_live_id(self);
+            match focus {
+                Some(id) if self.live_focus_id.as_deref() != Some(id.as_str()) => {
+                    self.live_focus_id = Some(id.clone());
+                    self.refresh_live_focus(id);
+                }
+                Some(id) if self.live_focus.is_due(LIVE_POLL) => self.refresh_live_focus(id),
+                Some(_) => {}
+                None => self.live_focus_id = None,
+            }
+        }
 
         let interval = if self.any_live() {
             LIVE_POLL
@@ -505,6 +748,7 @@ impl App {
         if self.detail.is_some() && self.detail_poller.is_due(DETAIL_POLL) {
             self.refresh_detail();
         }
+        changed || self.is_refreshing() != refreshing_before
     }
 
     fn any_live(&self) -> bool {
@@ -517,6 +761,9 @@ impl App {
     fn refresh_active(&mut self) {
         if self.detail.is_some() {
             self.refresh_detail();
+        } else if self.team.is_some() {
+            self.refresh_scoreboard();
+            self.refresh_standings();
         } else {
             match self.screen {
                 Screen::Matches | Screen::Live => self.refresh_scoreboard(),
@@ -558,4 +805,16 @@ impl App {
         self.detail_poller
             .refresh(async move { provider.match_detail(&id).await.map_err(|e| e.to_string()) });
     }
+
+    fn refresh_live_focus(&mut self, id: String) {
+        let provider = Arc::clone(&self.provider);
+        self.live_focus
+            .refresh(async move { provider.match_detail(&id).await.map_err(|e| e.to_string()) });
+    }
+}
+
+/// The oldest (largest) of the supplied data ages, ignoring pollers that have
+/// not loaded yet. Returns `None` when none of them have data.
+fn oldest(ages: impl IntoIterator<Item = Option<Duration>>) -> Option<Duration> {
+    ages.into_iter().flatten().max()
 }

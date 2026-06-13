@@ -31,6 +31,22 @@ pub fn stage_from_label(label: &str) -> Option<Stage> {
     }
 }
 
+/// Map an ESPN `season.slug` (e.g. "round-of-32", "final") to a [`Stage`]. This
+/// is the authoritative per-event stage marker; unlike the calendar windows it
+/// is present on every event, including in the full-tournament response.
+pub fn stage_from_slug(slug: &str) -> Option<Stage> {
+    match slug {
+        "group-stage" => Some(Stage::GroupStage),
+        "round-of-32" => Some(Stage::RoundOf32),
+        "round-of-16" => Some(Stage::RoundOf16),
+        "quarterfinals" => Some(Stage::QuarterFinal),
+        "semifinals" => Some(Stage::SemiFinal),
+        "3rd-place-match" => Some(Stage::ThirdPlace),
+        "final" => Some(Stage::Final),
+        _ => None,
+    }
+}
+
 pub fn stage_for_date(calendar: &Calendar, kickoff: OffsetDateTime, fallback: Stage) -> Stage {
     calendar
         .stages

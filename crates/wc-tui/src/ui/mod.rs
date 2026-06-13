@@ -1,11 +1,13 @@
 //! Top-level rendering: tab bar, body, status bar, toast overlay, and help.
 
+pub mod flag_image;
 pub mod icons;
 pub mod screen_bracket;
 pub mod screen_detail;
 pub mod screen_live;
 pub mod screen_matches;
 pub mod screen_standings;
+pub mod screen_team;
 pub mod screens;
 pub mod theme;
 pub mod toast;
@@ -14,11 +16,26 @@ use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, Paragraph, Tabs, Wrap};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph, Tabs};
 
 use crate::app::App;
 use crate::ui::screens::Screen;
 use crate::ui::toast::{Level, Toasts};
+
+/// Coarse "time ago" label for the freshness indicator. Deliberately avoids
+/// second precision: the event loop only repaints when something changes, so a
+/// per-second value would appear frozen between refreshes. Minute-bucketed text
+/// stays accurate across the poll-driven redraws that do happen.
+fn format_age(age: std::time::Duration) -> String {
+    let secs = age.as_secs();
+    if secs < 60 {
+        "just now".to_owned()
+    } else if secs < 3600 {
+        format!("{}m ago", secs / 60)
+    } else {
+        format!("{}h ago", secs / 3600)
+    }
+}
 
 /// Render the entire UI for one frame.
 pub fn render(app: &App, frame: &mut Frame) {
@@ -103,7 +120,7 @@ fn render_status_bar(app: &App, frame: &mut Frame, area: Rect) {
         spans.push(Span::raw("  "));
     } else if let Some(age) = app.active_data_age() {
         spans.push(Span::styled(
-            format!("updated {}s ago", age.as_secs()),
+            format!("updated {}", format_age(age)),
             Style::new().fg(theme.dim),
         ));
         spans.push(Span::raw("  "));
@@ -158,22 +175,43 @@ fn render_toasts(app: &App, frame: &mut Frame, area: Rect) {
 
 fn render_help(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme();
-    let lines = vec![
+    let head = |text: &'static str| {
         Line::from(Span::styled(
-            "Keybindings",
+            text,
             Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
-        )),
+        ))
+    };
+    let row = |keys: &'static str, action: &'static str| {
+        Line::from(vec![
+            Span::styled(format!("  {keys:<18}"), Style::new().fg(theme.fg)),
+            Span::styled(action, Style::new().fg(theme.dim)),
+        ])
+    };
+    let lines = vec![
+        head("Global"),
+        row("1–4 / Tab / ⇧Tab", "switch screen"),
+        row("r", "refresh now"),
+        row("t", "cycle colour theme"),
+        row("? ", "toggle this help"),
+        row("q", "quit"),
         Line::from(""),
-        Line::from("1–4 / Tab / Shift-Tab   switch screen"),
-        Line::from("j / k / ↑ / ↓           move selection"),
-        Line::from("Enter                   open match detail"),
-        Line::from("Esc                     back / close"),
-        Line::from("r                       refresh now"),
-        Line::from("t                       cycle colour theme"),
-        Line::from("?                       toggle this help"),
-        Line::from("q                       quit"),
+        head("Matches & Live"),
+        row("j / k / ↑ / ↓", "move / switch match"),
+        row("f", "favourites filter (Matches) · flags (Live)"),
+        row("Enter", "open match detail"),
+        Line::from(""),
+        head("Standings"),
+        row("h / l / ← / →", "switch group"),
+        row("j / k / ↑ / ↓", "move between teams"),
+        row("Enter", "open team"),
+        row("*", "toggle favourite team"),
+        Line::from(""),
+        head("Overlays"),
+        row("Enter", "team → match detail"),
+        row("j / k", "scroll / move"),
+        row("Esc", "back / close"),
     ];
-    let width = 52u16.min(area.width.saturating_sub(2));
+    let width = 48u16.min(area.width.saturating_sub(2));
     let height = u16::try_from(lines.len()).unwrap_or(1) + 2;
     let rect = screens::widgets::centered(area, width, height);
     frame.render_widget(Clear, rect);
@@ -185,8 +223,27 @@ fn render_help(app: &App, frame: &mut Frame, area: Rect) {
         Paragraph::new(lines)
             .block(block)
             .alignment(Alignment::Left)
-            .wrap(Wrap { trim: true })
             .style(Style::new().fg(theme.fg)),
         rect,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_age;
+    use std::time::Duration;
+
+    #[test]
+    fn age_under_a_minute_reads_just_now() {
+        assert_eq!(format_age(Duration::from_secs(0)), "just now");
+        assert_eq!(format_age(Duration::from_secs(59)), "just now");
+    }
+
+    #[test]
+    fn age_buckets_into_minutes_then_hours() {
+        assert_eq!(format_age(Duration::from_mins(1)), "1m ago");
+        assert_eq!(format_age(Duration::from_secs(125)), "2m ago");
+        assert_eq!(format_age(Duration::from_hours(1)), "1h ago");
+        assert_eq!(format_age(Duration::from_hours(2)), "2h ago");
+    }
 }

@@ -9,15 +9,29 @@ Rust and [ratatui](https://ratatui.rs).
 ## Features
 
 - **Matches** — fixtures by day and stage, status badges, local-timezone
-  kickoff times, favourite-team filtering.
-- **Live** — a compact scoreboard of in-play matches that refreshes on a fast
-  cadence.
-- **Standings** — the 12 group tables (A–L) with qualification highlighting.
+  kickoff times, and favourite-team filtering; opens on the current (or next)
+  game.
+- **Live** — a glanceable "Live Activity" card: a large block-digit score
+  flanked by real national flags (inline images on Kitty / Ghostty / WezTerm /
+  iTerm2 / Sixel terminals; omitted on terminals without graphics support), the
+  clock, and the most recent event; previews the next kickoff with a countdown
+  when nothing is in play.
+- **Standings** — the 12 group tables (A–L) with qualification highlighting,
+  team-row navigation, and `Enter` to open a team view.
+- **Team** — opened from Standings: a team's group summary, recent form, and
+  full fixture list.
 - **Bracket** — the knockout tree (Round of 32 → Final).
 - **Match detail** — goals, cards, substitutions, lineups, and team stats.
+- **Favourite teams** — star teams with `*` from Standings or the team view;
+  favourites are highlighted (★) across every screen and can filter the Matches
+  list.
+- Small inline **flags** beside each team in the Matches, Standings, and Team
+  lists — real images on graphics-capable terminals, colored half-blocks
+  otherwise.
 - Pluggable **data providers** (ESPN by default; API-Football and
-  football-data.org optional), colour themes, an offline cache, and mouse
-  support.
+  football-data.org optional), nine colour themes (including Catppuccin and a
+  Government of Canada palette), real national flags via terminal graphics
+  protocols, an offline cache, and mouse support.
 
 ## Data providers
 
@@ -42,19 +56,20 @@ Requires the toolchain pinned in `rust-toolchain.toml`.
 
 ## Keybindings
 
-| Key                 | Action                              |
-| ------------------- | ----------------------------------- |
-| `1`–`4`             | Jump to a screen by number          |
-| `Tab` / `Shift+Tab` | Next / previous screen              |
-| `j`/`k`, `↓`/`↑`    | Move selection                      |
-| `Enter`             | Open match detail                   |
-| `f`                 | Toggle favourites filter (Matches)  |
-| `h`/`l`, `←`/`→`    | Switch group / round                |
-| `r`                 | Refresh now                         |
-| `t`                 | Cycle colour theme                  |
-| `?`                 | Toggle help                         |
-| `Esc`               | Back / close                        |
-| `q`                 | Quit                                |
+| Key                 | Action                                  |
+| ------------------- | --------------------------------------- |
+| `1`–`4`             | Jump to a screen by number              |
+| `Tab` / `Shift+Tab` | Next / previous screen                  |
+| `j`/`k`, `↓`/`↑`    | Move selection                          |
+| `Enter`             | Open match detail (team view on Standings) |
+| `f`                 | Toggle favourites filter (Matches)      |
+| `*`                 | Toggle favourite team (Standings, Team) |
+| `h`/`l`, `←`/`→`    | Switch group / round                    |
+| `r`                 | Refresh now                             |
+| `t`                 | Cycle colour theme                      |
+| `?`                 | Toggle help                             |
+| `Esc`               | Back / close                            |
+| `q`                 | Quit                                    |
 
 The full list, including per-screen and mouse bindings, is in
 [docs/keybindings.md](docs/keybindings.md).
@@ -73,3 +88,7 @@ The full list, including per-screen and mouse bindings, is in
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+Bundled national-flag artwork is from
+[flag-icons](https://github.com/lipis/flag-icons) (MIT); see
+[crates/wc-tui/assets/flags/ATTRIBUTION.md](crates/wc-tui/assets/flags/ATTRIBUTION.md).

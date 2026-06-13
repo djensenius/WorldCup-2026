@@ -29,7 +29,7 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let title = app
         .detail()
         .map_or_else(|| "Match".to_owned(), |d| d.label.clone());
-    let block = widgets::panel(&title, theme);
+    let block = widgets::screen_block(&title, "j/k scroll · Esc close", theme);
     let inner = block.inner(area);
     frame.render_widget(block, area);
 

@@ -12,7 +12,7 @@ use time::{Date, macros::format_description};
 
 use crate::backends::common::{
     f64_to_i16, f64_to_u8, f64_to_u16, group_from_text, minute_from_clock, parse_time,
-    parse_u8_str, stage_for_date, stage_from_label,
+    parse_u8_str, stage_for_date, stage_from_label, stage_from_slug,
 };
 use crate::domain::{
     Bracket, BracketRound, Calendar, Group, GroupStanding, Lineup, Match, MatchDetail, MatchEvent,
@@ -25,6 +25,14 @@ use crate::transport::Http;
 const SCOREBOARD_URL: &str =
     "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
 const STANDINGS_URL: &str = "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings";
+/// Inclusive date window covering the entire 2026 FIFA World Cup (UTC, `YYYYMMDD`).
+///
+/// ESPN's scoreboard defaults to the current matchday only; passing this range
+/// returns every fixture (group stage through the final) in a single request so
+/// the schedule, live, bracket, and team views all have the full tournament.
+const TOURNAMENT_DATE_RANGE: &str = "20260611-20260719";
+/// Upper bound on events returned for the full-tournament query (104 matches in 2026).
+const SCHEDULE_LIMIT: u32 = 300;
 const SUMMARY_URL: &str =
     "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=";
 
@@ -52,6 +60,16 @@ impl EspnProvider {
         );
         self.http.get_json(&url, &[]).await
     }
+
+    /// Fetch every fixture in the tournament in one request. ESPN's default
+    /// scoreboard only returns the current matchday, so the full schedule (used
+    /// by the matches, live, bracket, and team views) needs an explicit date
+    /// range. Note the range response omits the league calendar, so stages are
+    /// resolved from each event's `season.slug` rather than the calendar.
+    async fn fetch_full_schedule(&self) -> Result<EspnScoreboard> {
+        let url = format!("{SCOREBOARD_URL}?dates={TOURNAMENT_DATE_RANGE}&limit={SCHEDULE_LIMIT}");
+        self.http.get_json(&url, &[]).await
+    }
 }
 
 impl ScoreProvider for EspnProvider {
@@ -64,7 +82,10 @@ impl ScoreProvider for EspnProvider {
     }
 
     async fn scoreboard(&self, day: Option<Date>) -> Result<Vec<Match>> {
-        let dto = self.fetch_scoreboard(day).await?;
+        let dto = match day {
+            Some(_) => self.fetch_scoreboard(day).await?,
+            None => self.fetch_full_schedule().await?,
+        };
         let calendar = dto.calendar()?;
         dto.matches(&calendar)
     }
@@ -75,7 +96,7 @@ impl ScoreProvider for EspnProvider {
     }
 
     async fn bracket(&self) -> Result<Bracket> {
-        let dto = self.fetch_scoreboard(None).await?;
+        let dto = self.fetch_full_schedule().await?;
         let calendar = dto.calendar()?;
         let matches = dto.matches(&calendar)?;
         let mut rounds = Vec::new();
@@ -169,8 +190,14 @@ struct EspnEvent {
     id: String,
     date: String,
     name: Option<String>,
+    season: Option<EspnSeason>,
     #[serde(default)]
     competitions: Vec<EspnCompetition>,
+}
+
+#[derive(Debug, Deserialize)]
+struct EspnSeason {
+    slug: Option<String>,
 }
 
 impl EspnEvent {
@@ -188,10 +215,19 @@ impl EspnEvent {
         let note = competition
             .and_then(|c| c.alt_game_note.as_deref())
             .or(self.name.as_deref());
-        let fallback = stage_from_label(note.unwrap_or_default()).unwrap_or(Stage::GroupStage);
+        let stage = self
+            .season
+            .as_ref()
+            .and_then(|s| s.slug.as_deref())
+            .and_then(stage_from_slug)
+            .unwrap_or_else(|| {
+                let fallback =
+                    stage_from_label(note.unwrap_or_default()).unwrap_or(Stage::GroupStage);
+                stage_for_date(calendar, kickoff, fallback)
+            });
         Ok(Match {
             id: self.id.clone(),
-            stage: stage_for_date(calendar, kickoff, fallback),
+            stage,
             group: group_from_text(note),
             home,
             away,
@@ -500,6 +536,7 @@ impl EspnHeader {
             id: self.id.clone(),
             date,
             name: None,
+            season: None,
             competitions: self.competitions.clone(),
         }
     }

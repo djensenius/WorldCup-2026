@@ -46,4 +46,10 @@ impl Icons {
     pub fn bullet(self) -> &'static str {
         if self.nerd { "\u{f444}" } else { "-" }
     }
+
+    /// Favourite/star glyph.
+    #[must_use]
+    pub fn star(self) -> &'static str {
+        if self.nerd { "\u{f005}" } else { "★" }
+    }
 }

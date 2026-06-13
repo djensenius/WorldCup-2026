@@ -25,8 +25,9 @@ pub trait ScoreProvider {
     /// The competition calendar (stage windows).
     async fn calendar(&self) -> Result<Calendar>;
 
-    /// Matches for a given day (UTC). `None` means "the provider's default
-    /// window" (typically today/around now).
+    /// Matches for the tournament. `None` returns the full schedule (every
+    /// fixture, group stage through the final); `Some(day)` filters to a single
+    /// UTC day.
     async fn scoreboard(&self, day: Option<Date>) -> Result<Vec<Match>>;
 
     /// All group tables.
