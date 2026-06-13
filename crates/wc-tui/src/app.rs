@@ -120,6 +120,8 @@ pub struct App {
     bracket: Poller<Bracket>,
     calendar: Poller<Calendar>,
     detail_poller: Poller<MatchDetail>,
+    live_focus: Poller<MatchDetail>,
+    live_focus_id: Option<String>,
     cache: Cache,
     tab_hitboxes: RefCell<TabHitboxes>,
 
@@ -182,6 +184,8 @@ impl App {
             bracket,
             calendar,
             detail_poller: Poller::new(),
+            live_focus: Poller::new(),
+            live_focus_id: None,
             cache,
             tab_hitboxes: RefCell::new(TabHitboxes::default()),
             ui_state: ScreenState::default(),
@@ -329,6 +333,25 @@ impl App {
     /// Match detail for the open overlay.
     pub fn detail_state(&self) -> &Poller<MatchDetail> {
         &self.detail_poller
+    }
+
+    /// Live detail (timeline) for the match focused on the Live screen.
+    pub fn live_focus(&self) -> &Poller<MatchDetail> {
+        &self.live_focus
+    }
+
+    /// Toggle the colored flags on/off and persist the choice.
+    pub fn toggle_flags(&mut self) {
+        self.config.ui.show_flags = !self.config.ui.show_flags;
+        let state = if self.config.ui.show_flags {
+            "on"
+        } else {
+            "off"
+        };
+        match self.config.save_to(&self.config_path) {
+            Ok(()) => self.toasts.info(format!("Flags {state}")),
+            Err(err) => self.toasts.warn(format!("Could not save setting: {err}")),
+        }
     }
 
     /// Whether any displayed resource is currently served from the offline
@@ -569,6 +592,22 @@ impl App {
             self.cache.store(CACHE_CALENDAR, cal);
         }
         self.detail_poller.drain();
+        self.live_focus.drain();
+
+        // Keep the Live screen's "most recent event" fresh for the focused
+        // in-play match (only while that screen is open).
+        if matches!(self.screen, Screen::Live) && self.detail.is_none() && self.team.is_none() {
+            let focus = ui::screen_live::focused_live_id(self);
+            match focus {
+                Some(id) if self.live_focus_id.as_deref() != Some(id.as_str()) => {
+                    self.live_focus_id = Some(id.clone());
+                    self.refresh_live_focus(id);
+                }
+                Some(id) if self.live_focus.is_due(LIVE_POLL) => self.refresh_live_focus(id),
+                Some(_) => {}
+                None => self.live_focus_id = None,
+            }
+        }
 
         let interval = if self.any_live() {
             LIVE_POLL
@@ -643,6 +682,12 @@ impl App {
         let id = nav.match_id.clone();
         let provider = Arc::clone(&self.provider);
         self.detail_poller
+            .refresh(async move { provider.match_detail(&id).await.map_err(|e| e.to_string()) });
+    }
+
+    fn refresh_live_focus(&mut self, id: String) {
+        let provider = Arc::clone(&self.provider);
+        self.live_focus
             .refresh(async move { provider.match_detail(&id).await.map_err(|e| e.to_string()) });
     }
 }

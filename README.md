@@ -11,8 +11,9 @@ Rust and [ratatui](https://ratatui.rs).
 - **Matches** — fixtures by day and stage, status badges, local-timezone
   kickoff times, and favourite-team filtering; opens on the current (or next)
   game.
-- **Live** — a scoreboard of in-play matches followed by the soonest upcoming
-  fixtures, refreshing on a fast cadence.
+- **Live** — a glanceable "Live Activity" card: a large block-digit score
+  flanked by colored ASCII-art flags, the clock, and the most recent event;
+  previews the next kickoff with a countdown when nothing is in play.
 - **Standings** — the 12 group tables (A–L) with qualification highlighting,
   team-row navigation, and `Enter` to open a team view.
 - **Team** — opened from Standings: a team's group summary, recent form, and
@@ -24,7 +25,8 @@ Rust and [ratatui](https://ratatui.rs).
   list.
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), nine colour themes (including Catppuccin and a
-  Government of Canada palette), an offline cache, and mouse support.
+  Government of Canada palette), colored ASCII-art flags, an offline cache, and
+  mouse support.
 
 ## Data providers
 

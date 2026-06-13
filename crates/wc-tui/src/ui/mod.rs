@@ -1,5 +1,6 @@
 //! Top-level rendering: tab bar, body, status bar, toast overlay, and help.
 
+pub mod flags;
 pub mod icons;
 pub mod screen_bracket;
 pub mod screen_detail;
@@ -180,8 +181,8 @@ fn render_help(app: &App, frame: &mut Frame, area: Rect) {
         row("q", "quit"),
         Line::from(""),
         head("Matches & Live"),
-        row("j / k / ↑ / ↓", "move selection"),
-        row("f", "favourites filter (Matches)"),
+        row("j / k / ↑ / ↓", "move / switch match"),
+        row("f", "favourites filter (Matches) · flags (Live)"),
         row("Enter", "open match detail"),
         Line::from(""),
         head("Standings"),

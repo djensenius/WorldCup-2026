@@ -13,6 +13,7 @@ use wc_data::domain::{Group, GroupStanding};
 
 use crate::app::App;
 use crate::data::Remote;
+use crate::ui::flags;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
 
@@ -123,7 +124,8 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
         .enumerate()
         .map(|(index, row)| {
             let favorite = app.config().is_favorite(&row.name, &row.abbreviation);
-            row.into_table_row(theme, index == selected_row, favorite, star)
+            let flag = flag_swatch(app, &row.abbreviation);
+            row.into_table_row(theme, index == selected_row, favorite, star, flag)
         });
     let table = Table::new(
         rows,
@@ -217,6 +219,7 @@ impl StandingDisplayRow {
         selected: bool,
         favorite: bool,
         star: &str,
+        flag: Vec<Span<'static>>,
     ) -> Row<'static> {
         let mut style = match self.qualification {
             Qualification::Qualified => Style::new().fg(theme.ok),
@@ -232,14 +235,19 @@ impl StandingDisplayRow {
         } else {
             style
         };
-        let team = if favorite {
+        let name = if favorite {
             format!("{} {star}", self.team)
         } else {
             self.team
         };
+        let mut team_spans = flag;
+        if !team_spans.is_empty() {
+            team_spans.push(Span::raw(" "));
+        }
+        team_spans.push(Span::raw(name));
         Row::new(vec![
             Cell::from(marker).style(marker_style),
-            Cell::from(team),
+            Cell::from(Line::from(team_spans)),
             Cell::from(self.played),
             Cell::from(self.won),
             Cell::from(self.drawn),
@@ -251,6 +259,17 @@ impl StandingDisplayRow {
         ])
         .style(style)
     }
+}
+
+/// One-line flag swatch spans for a team, or empty when flags are off or there
+/// is no flag for the code.
+fn flag_swatch(app: &App, abbreviation: &str) -> Vec<Span<'static>> {
+    if !app.config().ui.show_flags {
+        return Vec::new();
+    }
+    flags::flag(abbreviation)
+        .map(|f| f.swatch().spans)
+        .unwrap_or_default()
 }
 
 fn format_goal_diff(diff: i16) -> String {

@@ -56,6 +56,8 @@ pub struct UiSettings {
     pub theme: String,
     /// Use Nerd Font glyphs for icons.
     pub nerd_fonts: bool,
+    /// Show colored ASCII-art flags.
+    pub show_flags: bool,
     /// How to display kickoff times.
     pub timezone: TimezonePref,
 }
@@ -85,6 +87,7 @@ impl Default for UiSettings {
         Self {
             theme: "world-night".to_owned(),
             nerd_fonts: false,
+            show_flags: true,
             timezone: TimezonePref::default(),
         }
     }

@@ -26,6 +26,13 @@ are highlighted with a star (★) and the accent colour everywhere they appear �
 Matches, Live, Standings, the Team view, and the Bracket. On Matches, `f`
 filters the list down to fixtures involving a favourite.
 
+## Flags
+
+Teams show small colored ASCII-art flags in the Matches list, Standings, and a
+large pair on the Live card. Press `f` on the **Live** screen to toggle flags on
+or off (the choice is saved to your config as `show_flags`). Flags use 24-bit
+"truecolor"; in a terminal without it they may look approximate.
+
 ## Matches
 
 Opens focused on the current game (or the next kickoff when nothing is live).
@@ -39,13 +46,16 @@ Favourite teams are marked with a star (★) and highlighted in the accent colou
 
 ## Live
 
-The Live screen lists matches **in play** first, then the soonest **upcoming**
-fixtures, so there is always something to see even when nothing is live.
+A glanceable "Live Activity" card showing one match at a time: a large
+block-digit score flanked by colored flags, the clock, and the most recent
+event (goal/card). When nothing is in play it previews the soonest upcoming
+fixtures with a kickoff countdown.
 
-| Key                | Action                                       |
-| ------------------ | -------------------------------------------- |
-| `j` / `k`, `↓`/`↑` | Move across the in-play and upcoming matches |
-| `Enter`            | Open match detail for the selection          |
+| Key                       | Action                                           |
+| ------------------------- | ------------------------------------------------ |
+| `j` / `k`, `←`/`→`, `↓`/`↑` | Switch between live (or upcoming) matches       |
+| `f`                       | Toggle the colored flags on/off (saved)          |
+| `Enter`                   | Open the full match detail for the shown match   |
 
 ## Standings
 

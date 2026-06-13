@@ -84,6 +84,8 @@ kind = "espn"
 theme = "world-night"
 # Use Nerd Font glyphs for icons.
 nerd_fonts = false
+# Show colored ASCII-art flags (toggle at runtime with `f` on the Live screen).
+show_flags = true
 # Kickoff display: "local" (default) or "utc". A fixed whole-hour offset
 # from UTC is also supported.
 timezone = "local"
