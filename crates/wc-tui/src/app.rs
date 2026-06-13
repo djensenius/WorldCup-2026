@@ -7,6 +7,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+use ratatui::layout::Size;
 use time::{OffsetDateTime, UtcOffset};
 use wc_data::Provider;
 use wc_data::domain::{Bracket, Calendar, Group, Match, MatchDetail};
@@ -41,6 +42,21 @@ const CACHE_STANDINGS: &str = "standings";
 const CACHE_BRACKET: &str = "bracket";
 /// Cache key for the persisted competition-calendar payload.
 const CACHE_CALENDAR: &str = "calendar";
+
+/// Fingerprint of the on-screen view identity, used to decide when to clear the
+/// terminal so stale graphics-protocol flag images don't persist (see
+/// [`App::view_signature`]).
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct ViewSignature {
+    screen: usize,
+    detail: bool,
+    team: bool,
+    help: bool,
+    live_selected: usize,
+    show_flags: bool,
+    width: u16,
+    height: u16,
+}
 
 /// Navigation target for the match-detail overlay.
 #[derive(Debug, Clone)]
@@ -207,6 +223,7 @@ impl App {
     /// Returns an error only if drawing to the terminal fails.
     pub async fn run(mut self, terminal: &mut Tui) -> Result<()> {
         let mut events = EventLoop::new(TICK);
+        let mut last_sig = self.view_signature(terminal.size()?);
         terminal.draw(|frame| ui::render(&self, frame))?;
         loop {
             // Only redraw when something actually changed. Redrawing on every
@@ -232,10 +249,43 @@ impl App {
                 break;
             }
             if redraw {
+                // The Live card draws real flag images through a terminal
+                // graphics protocol, which ratatui's cell diff cannot erase.
+                // Clear when the change involves the Live view (entering,
+                // leaving, switching match, toggling flags, or an overlay over
+                // it) or a resize, so stale images don't bleed across tabs or
+                // linger. Pure text-tab switches need no clear, so they don't
+                // flash.
+                let sig = self.view_signature(terminal.size()?);
+                if sig != last_sig {
+                    let live = Screen::Live.index();
+                    let touches_live = last_sig.screen == live || sig.screen == live;
+                    let resized = (last_sig.width, last_sig.height) != (sig.width, sig.height);
+                    if touches_live || resized {
+                        terminal.clear()?;
+                    }
+                    last_sig = sig;
+                }
                 terminal.draw(|frame| ui::render(&self, frame))?;
             }
         }
         Ok(())
+    }
+
+    /// A fingerprint of everything that decides which view — and therefore which
+    /// terminal-graphics flag images — is on screen. Used to clear the terminal
+    /// when it changes (see [`Self::run`]).
+    fn view_signature(&self, size: Size) -> ViewSignature {
+        ViewSignature {
+            screen: self.screen.index(),
+            detail: self.detail.is_some(),
+            team: self.team.is_some(),
+            help: self.show_help,
+            live_selected: self.ui_state.live_selected,
+            show_flags: self.config.ui.show_flags,
+            width: size.width,
+            height: size.height,
+        }
     }
 
     // --- accessors used by the UI -----------------------------------------
