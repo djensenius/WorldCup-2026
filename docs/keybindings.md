@@ -30,16 +30,21 @@ filters the list down to fixtures involving a favourite.
 
 The **Live** card shows a large pair of real national flags either side of the
 score. On terminals that support inline graphics — Kitty, Ghostty, WezTerm,
-Konsole (Kitty protocol), iTerm2, or anything with Sixel — they render as crisp
-images; elsewhere they fall back to colored unicode half-blocks. Press `f` on
-the Live screen to toggle flags on or off (saved to your config as
-`show_flags`).
+Konsole, iTerm2, or anything with Sixel — they render as crisp images;
+otherwise no flags are drawn. Press `f` on the Live screen to toggle flags on or
+off (saved to your config as `show_flags`).
 
-Graphics support is detected from environment variables and never queries the
-terminal (which can break input inside multiplexers). Inside `tmux`/`screen`,
-flags are off by default. To force a protocol — for example with tmux graphics
-passthrough enabled — set `WC26_GRAPHICS` to `kitty`, `iterm2`, `sixel`,
-`halfblocks`, or `off`.
+The protocol is detected from environment variables only — we never issue a
+terminal query, which can break key input inside multiplexers.
+
+**Inside tmux** flags work too: the graphics escapes are sent through tmux
+passthrough to the outer terminal, and `allow-passthrough` is enabled
+automatically. This needs tmux 3.3+ and a graphics-capable outer terminal. Note
+that WezTerm uses the **iTerm2** protocol (auto-detected) — forcing
+`WC26_GRAPHICS=kitty` there will not render, so prefer auto-detection.
+
+Set `WC26_GRAPHICS` to `kitty`, `iterm2`, `sixel`, `halfblocks`, or `off` only
+to override detection.
 
 ## Matches
 

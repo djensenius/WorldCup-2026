@@ -17,23 +17,31 @@ use resvg::usvg;
 
 /// Detect (or force) a terminal graphics picker. Returns `None` when graphics
 /// are unavailable or disabled, in which case flags are simply not drawn.
+/// Detect (or force) a terminal graphics picker. Returns `None` when graphics
+/// are unavailable or disabled, in which case flags are simply not drawn.
 ///
-/// Detection is environment-based only — we never query stdin, because an
-/// interactive query can desync the input stream inside terminal multiplexers
-/// and some PTYs, breaking key handling. Set `WC26_GRAPHICS` to
-/// `kitty`/`iterm2`/`sixel` to force a protocol (handy inside tmux with
-/// passthrough enabled), or `off` to disable flags entirely.
+/// Detection is environment-based only — we never issue an interactive terminal
+/// query, which can desync stdin and break key handling inside multiplexers and
+/// some PTYs. [`Picker::from_fontsize`] does the heavy lifting: it detects tmux
+/// (enabling tmux passthrough so image escapes reach the outer terminal) and
+/// guesses the outer terminal's protocol from environment variables (e.g.
+/// WezTerm → iTerm2, Kitty → Kitty). We add a few terminals it misses (Ghostty,
+/// Kitty-by-TERM). Set `WC26_GRAPHICS` to `kitty`/`iterm2`/`sixel`/`halfblocks`
+/// to force a protocol, or `off` to disable flags entirely.
 #[must_use]
 pub fn make_picker() -> Option<Picker> {
     let forced = std::env::var("WC26_GRAPHICS").ok();
     if forced.as_deref() == Some("off") {
         return None;
     }
+    // Builds a picker, detecting tmux + outer protocol from the environment and
+    // marking `is_tmux` so escapes are wrapped in tmux passthrough. No stdin.
+    let mut picker = Picker::from_fontsize(guess_font_size());
     let protocol = forced
         .as_deref()
         .and_then(parse_protocol)
-        .or_else(guess_protocol)?;
-    let mut picker = Picker::from_fontsize(guess_font_size());
+        .or_else(|| non_halfblocks(picker.protocol_type()))
+        .or_else(guess_extra_protocol)?;
     picker.set_protocol_type(protocol);
     Some(picker)
 }
@@ -48,29 +56,26 @@ fn parse_protocol(name: &str) -> Option<ProtocolType> {
     }
 }
 
-/// Guess a graphics protocol from environment variables, conservatively.
-/// Returns `None` (no flags) for terminals we can't confidently identify, and
-/// for multiplexers (tmux/screen) where passthrough is off by default.
-fn guess_protocol() -> Option<ProtocolType> {
+/// Treat a detected half-blocks protocol as "no real graphics" so we don't draw
+/// flags by default on terminals without image support.
+fn non_halfblocks(protocol: ProtocolType) -> Option<ProtocolType> {
+    (protocol != ProtocolType::Halfblocks).then_some(protocol)
+}
+
+/// Identify a few graphics terminals that ratatui-image's env heuristics miss
+/// (notably Ghostty and Kitty-by-`TERM`). Only consulted outside tmux, where
+/// `TERM`/`TERM_PROGRAM` are not masked by the multiplexer.
+fn guess_extra_protocol() -> Option<ProtocolType> {
     let env = |key: &str| std::env::var(key).ok();
     let term = env("TERM").unwrap_or_default().to_ascii_lowercase();
-    if env("TMUX").is_some() || term.starts_with("tmux") || term.starts_with("screen") {
-        return None;
-    }
     let program = env("TERM_PROGRAM").unwrap_or_default().to_ascii_lowercase();
-    if env("KITTY_WINDOW_ID").is_some()
+    if env("KITTY_WINDOW_ID").is_some_and(|v| !v.is_empty())
         || env("KONSOLE_VERSION").is_some()
         || term.contains("kitty")
         || term.contains("ghostty")
         || program == "ghostty"
-        || program == "wezterm"
-        || env("WEZTERM_PANE").is_some()
     {
         return Some(ProtocolType::Kitty);
-    }
-    let lc_terminal = env("LC_TERMINAL").unwrap_or_default().to_ascii_lowercase();
-    if program == "iterm.app" || lc_terminal.contains("iterm") {
-        return Some(ProtocolType::Iterm2);
     }
     None
 }
