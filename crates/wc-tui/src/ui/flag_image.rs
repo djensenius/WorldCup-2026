@@ -2,14 +2,12 @@
 //!
 //! Flags are vendored as SVGs (see `assets/flags/ATTRIBUTION.md`), rasterized
 //! with `resvg`, and drawn through [`ratatui_image`] using the Kitty, iTerm2, or
-//! Sixel protocol when the terminal supports it. On terminals without graphics
-//! support no flags are drawn by default (half-blocks are only used if the user
-//! forces `WC26_GRAPHICS=halfblocks`). The active protocol is detected once at
-//! startup (overridable with the `WC26_GRAPHICS` environment variable).
-//!
-//! For list screens (Matches, Standings) a tiny inline [`swatch`] is available:
-//! the same SVG rasterized to a single half-block row, returned as styled spans
-//! so it scrolls with the text and works on any terminal.
+//! Sixel protocol when the terminal supports it. The big Live-card flags need a
+//! real graphics protocol and are omitted on terminals without one. The small
+//! list flags ([`render_inline`]) use a real image when graphics are available
+//! and otherwise fall back to a half-block [`swatch`] so they still appear on
+//! any terminal. The active protocol is detected once at startup (overridable
+//! with the `WC26_GRAPHICS` environment variable).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -99,8 +97,9 @@ fn rasterize_swatch(code: &str, cols: u16) -> Option<SwatchPixels> {
 }
 
 /// Detect (or force) a terminal graphics picker. Returns `None` when no real
-/// graphics protocol is available or graphics are disabled, in which case flags
-/// are simply not drawn.
+/// graphics protocol is available or graphics are disabled; in that case the big
+/// Live-card flags are skipped while the small list flags still fall back to
+/// half-block swatches (see [`render_inline`]).
 ///
 /// Detection is environment-based only — we never issue an interactive terminal
 /// query, which can desync stdin and break key handling inside multiplexers and
