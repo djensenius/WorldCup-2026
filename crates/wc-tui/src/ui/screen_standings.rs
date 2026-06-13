@@ -221,7 +221,7 @@ impl StandingDisplayRow {
         let mut style = match self.qualification {
             Qualification::Qualified => Style::new().fg(theme.ok),
             Qualification::Third => Style::new().fg(theme.warn),
-            Qualification::Other => Style::new().fg(theme.fg),
+            Qualification::Other => Style::new().fg(theme.dim),
         };
         if selected {
             style = style.add_modifier(Modifier::BOLD);
