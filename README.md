@@ -23,8 +23,8 @@ Rust and [ratatui](https://ratatui.rs).
   favourites are highlighted (★) across every screen and can filter the Matches
   list.
 - Pluggable **data providers** (ESPN by default; API-Football and
-  football-data.org optional), colour themes, an offline cache, and mouse
-  support.
+  football-data.org optional), nine colour themes (including Catppuccin and a
+  Government of Canada palette), an offline cache, and mouse support.
 
 ## Data providers
 

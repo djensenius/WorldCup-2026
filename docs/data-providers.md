@@ -78,7 +78,9 @@ kind = "espn"
 # football_data_key = "..."  # prefer WC26_FOOTBALL_DATA_KEY
 
 [ui]
-# Theme name; cycle at runtime with `t`.
+# Theme name; cycle at runtime with `t`. One of: world-night, world-day,
+# pitch, high-contrast, catppuccin-latte, catppuccin-frappe,
+# catppuccin-macchiato, catppuccin-mocha, canada.
 theme = "world-night"
 # Use Nerd Font glyphs for icons.
 nerd_fonts = false
