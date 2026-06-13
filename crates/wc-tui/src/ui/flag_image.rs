@@ -42,19 +42,21 @@ pub fn swatch(code: &str, cols: u16) -> Option<Vec<Span<'static>>> {
         return None;
     }
     let key = (code.to_ascii_uppercase(), cols);
-    let pixels = SWATCH_CACHE.with(|cache| {
-        cache
-            .borrow_mut()
+    // Build the spans while holding the cache borrow so we never clone the
+    // cached pixel vector — this runs for every flag on every list frame.
+    SWATCH_CACHE.with(|cache| {
+        let mut cache = cache.borrow_mut();
+        let pixels = cache
             .entry(key.clone())
             .or_insert_with(|| rasterize_swatch(&key.0, cols))
-            .clone()
-    })?;
-    Some(
-        pixels
-            .into_iter()
-            .map(|(top, bottom)| Span::styled("\u{2580}", Style::new().fg(top).bg(bottom)))
-            .collect(),
-    )
+            .as_ref()?;
+        Some(
+            pixels
+                .iter()
+                .map(|&(top, bottom)| Span::styled("\u{2580}", Style::new().fg(top).bg(bottom)))
+                .collect(),
+        )
+    })
 }
 
 /// Draw an inline flag into `rect` for a list row, as a half-block [`swatch`]
