@@ -316,15 +316,20 @@ impl App {
     }
 
     /// Age of the data shown on the active screen, for the freshness indicator.
+    /// When the view is driven by more than one poller (e.g. the Live card also
+    /// shows the focused match's timeline, the team overlay also reads the
+    /// standings), report the *oldest* age so the indicator never looks fresher
+    /// than the stalest thing on screen.
     pub fn active_data_age(&self) -> Option<Duration> {
         if self.detail.is_some() {
             return self.detail_poller.state().age();
         }
         if self.team.is_some() {
-            return self.scoreboard.state().age();
+            return oldest([self.scoreboard.state().age(), self.standings.state().age()]);
         }
         match self.screen {
-            Screen::Matches | Screen::Live => self.scoreboard.state().age(),
+            Screen::Matches => self.scoreboard.state().age(),
+            Screen::Live => oldest([self.scoreboard.state().age(), self.live_focus.state().age()]),
             Screen::Standings => self.standings.state().age(),
             Screen::Bracket => self.bracket.state().age(),
         }
@@ -690,4 +695,10 @@ impl App {
         self.live_focus
             .refresh(async move { provider.match_detail(&id).await.map_err(|e| e.to_string()) });
     }
+}
+
+/// The oldest (largest) of the supplied data ages, ignoring pollers that have
+/// not loaded yet. Returns `None` when none of them have data.
+fn oldest(ages: impl IntoIterator<Item = Option<Duration>>) -> Option<Duration> {
+    ages.into_iter().flatten().max()
 }
