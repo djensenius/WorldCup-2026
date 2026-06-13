@@ -12,8 +12,10 @@ Rust and [ratatui](https://ratatui.rs).
   kickoff times, and favourite-team filtering; opens on the current (or next)
   game.
 - **Live** — a glanceable "Live Activity" card: a large block-digit score
-  flanked by colored ASCII-art flags, the clock, and the most recent event;
-  previews the next kickoff with a countdown when nothing is in play.
+  flanked by real national flags (rendered as inline images on Kitty / Ghostty /
+  WezTerm / iTerm2 / Sixel terminals, half-blocks elsewhere), the clock, and the
+  most recent event; previews the next kickoff with a countdown when nothing is
+  in play.
 - **Standings** — the 12 group tables (A–L) with qualification highlighting,
   team-row navigation, and `Enter` to open a team view.
 - **Team** — opened from Standings: a team's group summary, recent form, and
@@ -25,8 +27,8 @@ Rust and [ratatui](https://ratatui.rs).
   list.
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), nine colour themes (including Catppuccin and a
-  Government of Canada palette), colored ASCII-art flags, an offline cache, and
-  mouse support.
+  Government of Canada palette), real national flags via terminal graphics
+  protocols, an offline cache, and mouse support.
 
 ## Data providers
 
@@ -83,3 +85,7 @@ The full list, including per-screen and mouse bindings, is in
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+Bundled national-flag artwork is from
+[flag-icons](https://github.com/lipis/flag-icons) (MIT); see
+[crates/wc-tui/assets/flags/ATTRIBUTION.md](crates/wc-tui/assets/flags/ATTRIBUTION.md).

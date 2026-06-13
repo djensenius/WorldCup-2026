@@ -28,10 +28,18 @@ filters the list down to fixtures involving a favourite.
 
 ## Flags
 
-Teams show small colored ASCII-art flags in the Matches list, Standings, and a
-large pair on the Live card. Press `f` on the **Live** screen to toggle flags on
-or off (the choice is saved to your config as `show_flags`). Flags use 24-bit
-"truecolor"; in a terminal without it they may look approximate.
+The **Live** card shows a large pair of real national flags either side of the
+score. On terminals that support inline graphics — Kitty, Ghostty, WezTerm,
+Konsole (Kitty protocol), iTerm2, or anything with Sixel — they render as crisp
+images; elsewhere they fall back to colored unicode half-blocks. Press `f` on
+the Live screen to toggle flags on or off (saved to your config as
+`show_flags`).
+
+Graphics support is detected from environment variables and never queries the
+terminal (which can break input inside multiplexers). Inside `tmux`/`screen`,
+flags are off by default. To force a protocol — for example with tmux graphics
+passthrough enabled — set `WC26_GRAPHICS` to `kitty`, `iterm2`, `sixel`,
+`halfblocks`, or `off`.
 
 ## Matches
 

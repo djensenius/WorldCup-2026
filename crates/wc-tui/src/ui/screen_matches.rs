@@ -17,7 +17,6 @@ use wc_data::domain::{Match, MatchStatus, Stage, Team};
 use crate::app::App;
 use crate::data::Remote;
 use crate::timefmt;
-use crate::ui::flags;
 use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
@@ -184,19 +183,11 @@ fn schedule_lines(
         }
         all.push(match_row_line(
             m,
-            &MatchRow {
-                theme,
-                icons,
-                kickoff: &timefmt::time_hm(
-                    m.kickoff,
-                    &app.config().ui.timezone,
-                    app.local_offset(),
-                ),
-                favorite: involves_favorite(app, m),
-                selected: Some(m.id.as_str()) == selected_id,
-                home_flag: flag_swatch(app, &m.home),
-                away_flag: flag_swatch(app, &m.away),
-            },
+            theme,
+            icons,
+            &timefmt::time_hm(m.kickoff, &app.config().ui.timezone, app.local_offset()),
+            involves_favorite(app, m),
+            Some(m.id.as_str()) == selected_id,
         ));
     }
 
@@ -205,21 +196,14 @@ fn schedule_lines(
     all.into_iter().skip(start).take(available).collect()
 }
 
-struct MatchRow<'a> {
-    theme: &'a Theme,
+fn match_row_line(
+    m: &Match,
+    theme: &Theme,
     icons: Icons,
-    kickoff: &'a str,
+    kickoff: &str,
     favorite: bool,
     selected: bool,
-    home_flag: Vec<Span<'static>>,
-    away_flag: Vec<Span<'static>>,
-}
-
-fn match_row_line(m: &Match, row: &MatchRow) -> Line<'static> {
-    let theme = row.theme;
-    let icons = row.icons;
-    let selected = row.selected;
-    let favorite = row.favorite;
+) -> Line<'static> {
     let row_style = if selected {
         Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
     } else {
@@ -240,41 +224,15 @@ fn match_row_line(m: &Match, row: &MatchRow) -> Line<'static> {
     } else {
         (" ", Style::new().fg(theme.dim))
     };
-    let mut spans = vec![
+    Line::from(vec![
         Span::styled(format!("{marker} "), marker_style),
-        Span::styled(format!("{:<5}  ", row.kickoff), Style::new().fg(theme.dim)),
-    ];
-    if !row.home_flag.is_empty() {
-        spans.extend(row.home_flag.clone());
-        spans.push(Span::raw(" "));
-    }
-    spans.push(Span::styled(
-        format!("{:>6}", team_label(&m.home)),
-        team_style,
-    ));
-    spans.push(Span::styled(format!(" {:^11} ", score_text(m)), row_style));
-    spans.push(Span::styled(
-        format!("{:<6}", team_label(&m.away)),
-        team_style,
-    ));
-    if !row.away_flag.is_empty() {
-        spans.push(Span::raw(" "));
-        spans.extend(row.away_flag.clone());
-    }
-    spans.push(Span::styled("  ", row_style));
-    spans.push(status_span(&m.status, theme, icons));
-    Line::from(spans)
-}
-
-/// One-line flag swatch spans for a team, or empty when flags are off or the
-/// team has no flag.
-fn flag_swatch(app: &App, team: &Team) -> Vec<Span<'static>> {
-    if !app.config().ui.show_flags {
-        return Vec::new();
-    }
-    flags::flag(&team.abbreviation)
-        .map(|f| f.swatch().spans)
-        .unwrap_or_default()
+        Span::styled(format!("{kickoff:<5}  "), Style::new().fg(theme.dim)),
+        Span::styled(format!("{:>6}", team_label(&m.home)), team_style),
+        Span::styled(format!(" {:^11} ", score_text(m)), row_style),
+        Span::styled(format!("{:<6}", team_label(&m.away)), team_style),
+        Span::styled("  ", row_style),
+        status_span(&m.status, theme, icons),
+    ])
 }
 
 fn status_span(status: &MatchStatus, theme: &Theme, icons: Icons) -> Span<'static> {

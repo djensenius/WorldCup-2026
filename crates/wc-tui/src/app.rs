@@ -16,6 +16,7 @@ use crate::data::{Cache, Poller, SharedProvider};
 use crate::event::{AppEvent, EventLoop};
 use crate::tui::Tui;
 use crate::ui;
+use crate::ui::flag_image::FlagStore;
 use crate::ui::icons::Icons;
 use crate::ui::screens::{self, Screen};
 use crate::ui::theme::{self, Theme};
@@ -124,6 +125,7 @@ pub struct App {
     live_focus_id: Option<String>,
     cache: Cache,
     tab_hitboxes: RefCell<TabHitboxes>,
+    flags: Option<RefCell<FlagStore>>,
 
     /// Mutable per-screen UI state.
     pub ui_state: ScreenState,
@@ -137,6 +139,7 @@ impl App {
         config_path: PathBuf,
         provider: Provider,
         local_offset: UtcOffset,
+        flags: Option<FlagStore>,
     ) -> Self {
         let theme_index = theme::NAMES
             .iter()
@@ -188,6 +191,7 @@ impl App {
             live_focus_id: None,
             cache,
             tab_hitboxes: RefCell::new(TabHitboxes::default()),
+            flags: flags.map(RefCell::new),
             ui_state: ScreenState::default(),
         }
     }
@@ -230,6 +234,11 @@ impl App {
     /// The icon set.
     pub fn icons(&self) -> Icons {
         self.icons
+    }
+
+    /// The flag-image store, when terminal graphics are enabled.
+    pub fn flags(&self) -> Option<&RefCell<FlagStore>> {
+        self.flags.as_ref()
     }
 
     /// The loaded configuration.

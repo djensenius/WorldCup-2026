@@ -1,6 +1,6 @@
 //! Top-level rendering: tab bar, body, status bar, toast overlay, and help.
 
-pub mod flags;
+pub mod flag_image;
 pub mod icons;
 pub mod screen_bracket;
 pub mod screen_detail;

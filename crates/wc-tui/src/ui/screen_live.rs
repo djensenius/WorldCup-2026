@@ -12,21 +12,27 @@ use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use ratatui_image::Image;
 use time::OffsetDateTime;
 use wc_data::domain::{Match, MatchEvent, MatchEventKind, MatchStatus, Score, Stage, Team};
 
 use crate::app::App;
 use crate::data::Remote;
 use crate::timefmt;
-use crate::ui::flags;
 use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
 
 /// How many upcoming fixtures to cycle through when nothing is live.
 const UPCOMING_LIMIT: usize = 24;
-/// Flag width in cells (chosen so a flag is the same height as the big score).
-const FLAG_WIDTH: usize = 15;
+/// Flag image size in cells (≈3:2 at a typical 1:2 cell aspect).
+const FLAG_COLS: u16 = 15;
+const FLAG_ROWS: u16 = 5;
+/// Lines of text in a card (status, gap, names, 5 score rows, gap, event, gap,
+/// footer). Used to centre the card vertically and to place the flag images.
+const CARD_LINES: u16 = 12;
+/// Row offset of the big-score block within the card.
+const SCORE_ROW: u16 = 3;
 
 /// Render the live screen.
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
@@ -62,7 +68,9 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     }
 
     let selected = app.ui_state.live_selected.min(cards.len() - 1);
-    let lines = card_lines(app, cards[selected], selected, cards.len(), is_live, theme);
+    let m = cards[selected];
+    let score = score_centre(app, m, is_live);
+    let lines = card_lines(app, m, selected, cards.len(), is_live, &score, theme);
     let pad = usize::from(inner.height).saturating_sub(lines.len()) / 2;
     let mut all = vec![Line::from(""); pad];
     all.extend(lines);
@@ -72,6 +80,62 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
             .style(Style::new().fg(theme.fg)),
         inner,
     );
+
+    render_flags(app, frame, inner, m, &score, pad);
+}
+
+/// The text shown big and centred: the live score, or the kickoff time.
+fn score_centre(app: &App, m: &Match, is_live: bool) -> String {
+    if is_live {
+        score_text(m.score)
+    } else {
+        timefmt::time_hm(m.kickoff, &app.config().ui.timezone, app.local_offset())
+    }
+}
+
+/// Overlay the two teams' flag images either side of the big-score block.
+fn render_flags(app: &App, frame: &mut Frame, inner: Rect, m: &Match, score: &str, pad: usize) {
+    if !app.config().ui.show_flags {
+        return;
+    }
+    let Some(flag_store) = app.flags() else {
+        return;
+    };
+    if inner.height < CARD_LINES || pad > usize::from(u16::MAX) {
+        return;
+    }
+    let score_w = big_width(score);
+    let gap = 2u16;
+    let block_w = u32::from(FLAG_COLS) * 2 + u32::from(gap) * 2 + u32::from(score_w);
+    if block_w > u32::from(inner.width) {
+        return;
+    }
+    let pad = u16::try_from(pad).unwrap_or(u16::MAX);
+    let centre_x = inner.x + inner.width / 2;
+    let score_left = centre_x.saturating_sub(score_w / 2);
+    let flag_y = inner.y + pad + SCORE_ROW;
+    if flag_y + FLAG_ROWS > inner.y + inner.height {
+        return;
+    }
+    let left_x = score_left.saturating_sub(gap + FLAG_COLS);
+    let right_x = score_left + score_w + gap;
+
+    let mut flag_store = flag_store.borrow_mut();
+    for (code, x) in [
+        (&m.home.abbreviation, left_x),
+        (&m.away.abbreviation, right_x),
+    ] {
+        if let Some(protocol) = flag_store.flag(code, FLAG_COLS, FLAG_ROWS) {
+            let rect = Rect::new(x, flag_y, FLAG_COLS, FLAG_ROWS);
+            frame.render_widget(Image::new(protocol), rect);
+        }
+    }
+}
+
+/// Width in cells of a big-glyph string (each glyph is 4 wide, 1-cell spaced).
+fn big_width(text: &str) -> u16 {
+    let n = text.chars().count() as u16;
+    n.saturating_mul(4) + n.saturating_sub(1)
 }
 
 /// Handle a key for the live screen. Returns `true` if consumed.
@@ -157,6 +221,7 @@ fn card_lines(
     index: usize,
     total: usize,
     is_live: bool,
+    score: &str,
     theme: &Theme,
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
@@ -168,14 +233,9 @@ fn card_lines(
     // Team names.
     lines.push(names_line(app, m, theme));
 
-    // Big score (or kickoff time), flanked by flags when enabled.
-    let centre = if is_live {
-        score_text(m.score)
-    } else {
-        timefmt::time_hm(m.kickoff, &app.config().ui.timezone, app.local_offset())
-    };
-    let big = big_glyphs(&centre, if is_live { theme.warn } else { theme.accent });
-    lines.extend(flank_with_flags(app, m, big, theme));
+    // Big score (or kickoff time). Flags are overlaid separately as images.
+    let big = big_glyphs(score, if is_live { theme.warn } else { theme.accent });
+    lines.extend(big);
 
     // Most recent event for the in-play match.
     lines.push(Line::from(""));
@@ -233,49 +293,6 @@ fn names_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
         Span::styled("   v   ", Style::new().fg(theme.dim)),
         Span::styled(m.away.name.clone(), name_style(away_fav)),
     ])
-}
-
-/// Place the (already styled) big-score lines between the two teams' flags.
-fn flank_with_flags(
-    app: &App,
-    m: &Match,
-    score: Vec<Line<'static>>,
-    theme: &Theme,
-) -> Vec<Line<'static>> {
-    let home = flag_lines(app, &m.home);
-    let away = flag_lines(app, &m.away);
-    let (Some(home), Some(away)) = (home, away) else {
-        return score;
-    };
-    let height = score.len().max(home.len()).max(away.len());
-    let gap = Span::styled("  ", Style::new().fg(theme.dim));
-    (0..height)
-        .map(|i| {
-            let mut spans = Vec::new();
-            spans.extend(flag_row(&home, i));
-            spans.push(gap.clone());
-            if let Some(line) = score.get(i) {
-                spans.extend(line.spans.clone());
-            }
-            spans.push(gap.clone());
-            spans.extend(flag_row(&away, i));
-            Line::from(spans)
-        })
-        .collect()
-}
-
-fn flag_lines(app: &App, team: &Team) -> Option<Vec<Line<'static>>> {
-    if !app.config().ui.show_flags {
-        return None;
-    }
-    flags::flag(&team.abbreviation).map(|f| f.render(FLAG_WIDTH))
-}
-
-fn flag_row(lines: &[Line<'static>], i: usize) -> Vec<Span<'static>> {
-    lines.get(i).map_or_else(
-        || vec![Span::raw(" ".repeat(FLAG_WIDTH))],
-        |line| line.spans.clone(),
-    )
 }
 
 fn event_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {

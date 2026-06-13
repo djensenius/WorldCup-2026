@@ -75,7 +75,13 @@ async fn run(cli: Cli, local_offset: UtcOffset) -> Result<()> {
             }
         };
 
-    let mut app = App::new(config, config_path, provider, local_offset);
+    let mut app = App::new(
+        config,
+        config_path,
+        provider,
+        local_offset,
+        crate::ui::flag_image::make_picker().map(crate::ui::flag_image::FlagStore::new),
+    );
     if let Some(warning) = startup_warning {
         app.warn(warning);
     }

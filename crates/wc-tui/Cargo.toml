@@ -26,6 +26,9 @@ clap_mangen = { workspace = true }
 [dependencies]
 wc-data = { workspace = true }
 ratatui = { workspace = true }
+ratatui-image = { workspace = true }
+resvg = { workspace = true }
+image = { workspace = true }
 crossterm = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
