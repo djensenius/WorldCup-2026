@@ -196,9 +196,9 @@ fn rasterize(svg: &str, width: u32, height: u32) -> Option<DynamicImage> {
     Some(DynamicImage::ImageRgba8(rgba))
 }
 
-/// Whether a flag is available for a team code.
-#[cfg(test)]
-fn has_flag(code: &str) -> bool {
+/// Whether a flag is available for a team code (cheap: no rasterization).
+#[must_use]
+pub fn has_flag(code: &str) -> bool {
     svg(&code.to_ascii_uppercase()).is_some()
 }
 

@@ -1,7 +1,8 @@
 //! Live scoreboard screen — a glanceable "Live Activity" card.
 //!
 //! Shows one match at a time, big enough to read across a room: a large
-//! block-digit score flanked by colored ASCII-art flags, the clock, and the
+//! block-digit score flanked by real national flags (rendered as inline images
+//! when the terminal supports graphics, otherwise omitted), the clock, and the
 //! most recent event (goal/card). `j`/`k` cycles through the in-play matches
 //! (or the soonest upcoming fixtures when nothing is live, with a countdown),
 //! `Enter` opens the full match detail, and `f` toggles the flags.
@@ -19,6 +20,7 @@ use wc_data::domain::{Match, MatchEvent, MatchEventKind, MatchStatus, Score, Sta
 use crate::app::App;
 use crate::data::Remote;
 use crate::timefmt;
+use crate::ui::flag_image;
 use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
@@ -174,12 +176,7 @@ fn score_centre(app: &App, m: &Match, is_live: bool) -> String {
 }
 
 fn flag_available(app: &App, code: &str) -> bool {
-    app.flags().is_some_and(|store| {
-        store
-            .borrow_mut()
-            .flag(code, FLAG_COLS, FLAG_ROWS)
-            .is_some()
-    })
+    app.flags().is_some() && flag_image::has_flag(code)
 }
 
 /// Draw a team's flag image into `rect`, if a flag exists for the code.

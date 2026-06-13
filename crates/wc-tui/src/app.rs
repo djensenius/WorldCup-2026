@@ -338,7 +338,13 @@ impl App {
         }
         match self.screen {
             Screen::Matches => self.scoreboard.state().age(),
-            Screen::Live => oldest([self.scoreboard.state().age(), self.live_focus.state().age()]),
+            // The Live card only consults the focused-match timeline when a match
+            // is actually in play; otherwise it shows upcoming fixtures driven by
+            // the scoreboard alone, so a stale `live_focus` must not count.
+            Screen::Live if self.any_live() => {
+                oldest([self.scoreboard.state().age(), self.live_focus.state().age()])
+            }
+            Screen::Live => self.scoreboard.state().age(),
             Screen::Standings => self.standings.state().age(),
             Screen::Bracket => self.bracket.state().age(),
         }
