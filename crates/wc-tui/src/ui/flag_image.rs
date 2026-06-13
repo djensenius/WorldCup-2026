@@ -111,7 +111,9 @@ fn rasterize_swatch(code: &str, cols: u16) -> Option<SwatchPixels> {
 /// to force a protocol, or `off` to disable flags entirely.
 #[must_use]
 pub fn make_picker() -> Option<Picker> {
-    let forced = std::env::var("WC26_GRAPHICS").ok();
+    let forced = std::env::var("WC26_GRAPHICS")
+        .ok()
+        .map(|value| value.to_ascii_lowercase());
     if forced.as_deref() == Some("off") {
         return None;
     }
