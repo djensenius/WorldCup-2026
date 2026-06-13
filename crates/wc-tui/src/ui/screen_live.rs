@@ -366,11 +366,20 @@ fn names_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
     ])
 }
 
+/// The most recent event by match time. Providers don't agree on ordering
+/// (ESPN lists key events newest-first), so select by minute rather than
+/// relying on the position in the list.
+fn latest_event(events: &[MatchEvent]) -> Option<&MatchEvent> {
+    events
+        .iter()
+        .max_by_key(|event| (event.minute.unwrap_or(0), event.stoppage.unwrap_or(0)))
+}
+
 fn event_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
     let detail = app.live_focus().state().value();
     let recent = detail
         .filter(|d| d.summary.id == m.id)
-        .and_then(|d| d.events.last());
+        .and_then(|d| latest_event(&d.events));
     recent.map_or_else(
         || {
             Line::from(Span::styled(
@@ -619,6 +628,42 @@ mod tests {
     #[test]
     fn display_name_keeps_name_when_no_abbreviation() {
         assert_eq!(display_name("Switzerland", "", 6), "Switzerland");
+    }
+
+    fn event_at(minute: u16, stoppage: Option<u16>) -> MatchEvent {
+        MatchEvent {
+            minute: Some(minute),
+            stoppage,
+            kind: MatchEventKind::Goal,
+            team_id: None,
+            player: None,
+            detail: None,
+        }
+    }
+
+    #[test]
+    fn latest_event_picks_highest_minute_regardless_of_order() {
+        // Newest-first, like ESPN returns.
+        let events = vec![
+            event_at(73, None),
+            event_at(45, Some(2)),
+            event_at(10, None),
+        ];
+        assert_eq!(latest_event(&events).and_then(|e| e.minute), Some(73));
+    }
+
+    #[test]
+    fn latest_event_uses_stoppage_as_tiebreak() {
+        let events = vec![event_at(90, None), event_at(90, Some(4))];
+        assert_eq!(
+            latest_event(&events).map(|e| (e.minute, e.stoppage)),
+            Some((Some(90), Some(4)))
+        );
+    }
+
+    #[test]
+    fn latest_event_is_none_for_empty() {
+        assert!(latest_event(&[]).is_none());
     }
 
     #[test]
