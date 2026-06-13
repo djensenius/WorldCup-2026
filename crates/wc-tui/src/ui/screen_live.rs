@@ -27,15 +27,35 @@ use crate::ui::theme::Theme;
 
 /// How many upcoming fixtures to cycle through when nothing is live.
 const UPCOMING_LIMIT: usize = 24;
-/// Flag image size in cells. flag-icons art is 4:3; at a typical 1:2 cell
-/// aspect ~20×8 cells fills that ratio. `Resize::Fit` letterboxes within it,
-/// so a little slack here never distorts the flag.
-const FLAG_COLS: u16 = 20;
-const FLAG_ROWS: u16 = 8;
 /// Rows occupied by the big-score glyphs.
 const SCORE_ROWS: u16 = 5;
 /// Horizontal gap (cells) between a flag and the score.
 const FLAG_GAP: u16 = 3;
+/// Non-body rows in the card: status, names, context, pager and their gaps.
+const CHROME_ROWS: u16 = 7;
+/// Bounds (in rows) for the dynamically-sized Live flags.
+const MIN_FLAG_ROWS: u16 = 6;
+const MAX_FLAG_ROWS: u16 = 16;
+
+/// Largest flag size `(cols, rows)` that fits the card: as tall as the vertical
+/// space allows (bounded by [`MIN_FLAG_ROWS`]/[`MAX_FLAG_ROWS`]), then as wide as
+/// the ~4:3 art implies, shrinking if two flags plus the score would overflow the
+/// width. flag-icons art is 4:3, which at a typical 1:2 cell aspect is ~8:3 in
+/// cells; `Resize::Fit` letterboxes, so being a cell or two off never distorts it.
+fn flag_dims(inner: Rect, score_w: u16) -> (u16, u16) {
+    let mut rows = inner
+        .height
+        .saturating_sub(CHROME_ROWS + 1)
+        .clamp(MIN_FLAG_ROWS, MAX_FLAG_ROWS);
+    loop {
+        let cols = (rows * 8).div_ceil(3);
+        let block_w = cols * 2 + FLAG_GAP * 2 + score_w;
+        if block_w <= inner.width || rows <= MIN_FLAG_ROWS {
+            return (cols, rows);
+        }
+        rows -= 1;
+    }
+}
 
 /// Render the live screen.
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
@@ -82,8 +102,9 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
         && app.flags().is_some()
         && flag_available(app, &m.home.abbreviation)
         && flag_available(app, &m.away.abbreviation);
+    let (flag_cols, flag_rows) = flag_dims(inner, score_w);
     let block_w = if want_flags {
-        FLAG_COLS * 2 + FLAG_GAP * 2 + score_w
+        flag_cols * 2 + FLAG_GAP * 2 + score_w
     } else {
         score_w
     };
@@ -91,8 +112,12 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
 
     // Vertically centred block: status, gap, names, body (flags/score), gap,
     // context, gap, pager.
-    let body_h = FLAG_ROWS.max(SCORE_ROWS);
-    let total_h = body_h + 7;
+    let body_h = if flags {
+        flag_rows.max(SCORE_ROWS)
+    } else {
+        SCORE_ROWS
+    };
+    let total_h = body_h + CHROME_ROWS;
     let top = inner.y + inner.height.saturating_sub(total_h) / 2;
     let names_y = top + 2;
     let body_y = top + 3;
@@ -105,32 +130,32 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     if flags {
         let block_x = (inner.x + inner.width / 2).saturating_sub(block_w / 2);
         let home_x = block_x;
-        let score_x = block_x + FLAG_COLS + FLAG_GAP;
+        let score_x = block_x + flag_cols + FLAG_GAP;
         let away_x = score_x + score_w + FLAG_GAP;
-        let flag_y = body_y + (body_h - FLAG_ROWS) / 2;
+        let flag_y = body_y + (body_h - flag_rows) / 2;
         let score_y = body_y + (body_h - SCORE_ROWS) / 2;
 
         centered(
             frame,
-            Rect::new(home_x, names_y, FLAG_COLS, 1),
-            team_name_line(app, &m.home, FLAG_COLS, theme),
+            Rect::new(home_x, names_y, flag_cols, 1),
+            team_name_line(app, &m.home, flag_cols, theme),
         );
         centered(
             frame,
-            Rect::new(away_x, names_y, FLAG_COLS, 1),
-            team_name_line(app, &m.away, FLAG_COLS, theme),
+            Rect::new(away_x, names_y, flag_cols, 1),
+            team_name_line(app, &m.away, flag_cols, theme),
         );
         render_flag(
             app,
             frame,
             &m.home.abbreviation,
-            Rect::new(home_x, flag_y, FLAG_COLS, FLAG_ROWS),
+            Rect::new(home_x, flag_y, flag_cols, flag_rows),
         );
         render_flag(
             app,
             frame,
             &m.away.abbreviation,
-            Rect::new(away_x, flag_y, FLAG_COLS, FLAG_ROWS),
+            Rect::new(away_x, flag_y, flag_cols, flag_rows),
         );
         frame.render_widget(
             Paragraph::new(big_glyphs(&score, score_color)),
@@ -544,6 +569,27 @@ mod tests {
     #[test]
     fn big_glyphs_have_five_rows() {
         assert_eq!(big_glyphs("2-1", Color::Rgb(1, 2, 3)).len(), 5);
+    }
+
+    #[test]
+    fn flag_dims_caps_on_a_tall_wide_card() {
+        let (cols, rows) = flag_dims(Rect::new(0, 0, 220, 60), 14);
+        assert_eq!(rows, MAX_FLAG_ROWS);
+        assert!(cols > rows, "flags read wider than tall (~8:3)");
+    }
+
+    #[test]
+    fn flag_dims_clamps_to_min_on_a_short_card() {
+        let (_cols, rows) = flag_dims(Rect::new(0, 0, 220, 9), 14);
+        assert_eq!(rows, MIN_FLAG_ROWS);
+    }
+
+    #[test]
+    fn flag_dims_shrinks_to_fit_a_narrow_card() {
+        let score_w = 14;
+        let (cols, rows) = flag_dims(Rect::new(0, 0, 70, 60), score_w);
+        assert!(rows < MAX_FLAG_ROWS);
+        assert!(cols * 2 + FLAG_GAP * 2 + score_w <= 70);
     }
 
     #[test]
