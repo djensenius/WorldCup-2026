@@ -1,9 +1,10 @@
 //! Real national-flag artwork rendered via terminal graphics protocols.
 //!
 //! Flags are vendored as SVGs (see `assets/flags/ATTRIBUTION.md`), rasterized
-//! with `resvg`, and drawn through [`ratatui_image`], which uses the Kitty,
-//! iTerm2, or Sixel protocol when the terminal supports it and falls back to
-//! unicode half-blocks otherwise. The active protocol is detected once at
+//! with `resvg`, and drawn through [`ratatui_image`] using the Kitty, iTerm2, or
+//! Sixel protocol when the terminal supports it. On terminals without graphics
+//! support no flags are drawn by default (half-blocks are only used if the user
+//! forces `WC26_GRAPHICS=halfblocks`). The active protocol is detected once at
 //! startup (overridable with the `WC26_GRAPHICS` environment variable).
 
 use std::collections::HashMap;
@@ -15,10 +16,9 @@ use ratatui_image::picker::{Picker, ProtocolType};
 use ratatui_image::protocol::Protocol;
 use resvg::usvg;
 
-/// Detect (or force) a terminal graphics picker. Returns `None` when graphics
-/// are unavailable or disabled, in which case flags are simply not drawn.
-/// Detect (or force) a terminal graphics picker. Returns `None` when graphics
-/// are unavailable or disabled, in which case flags are simply not drawn.
+/// Detect (or force) a terminal graphics picker. Returns `None` when no real
+/// graphics protocol is available or graphics are disabled, in which case flags
+/// are simply not drawn.
 ///
 /// Detection is environment-based only — we never issue an interactive terminal
 /// query, which can desync stdin and break key handling inside multiplexers and
