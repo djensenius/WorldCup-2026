@@ -117,20 +117,18 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
         .standings_row
         .min(group.standings.len().saturating_sub(1));
     let star = app.icons().star();
+    let flags_on = app.config().ui.show_flags;
     let header = Row::new(["", "Team", "P", "W", "D", "L", "GF", "GA", "GD", "Pts"])
         .style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD));
-    let rows = standing_rows(group)
-        .into_iter()
-        .enumerate()
-        .map(|(index, row)| {
-            let favorite = app.config().is_favorite(&row.name, &row.abbreviation);
-            let flag = if app.config().ui.show_flags {
-                flag_image::swatch(&row.abbreviation, LIST_FLAG_COLS).unwrap_or_default()
-            } else {
-                Vec::new()
-            };
-            row.into_table_row(theme, index == selected_row, favorite, star, flag)
-        });
+    let display_rows = standing_rows(group);
+    let codes: Vec<String> = display_rows
+        .iter()
+        .map(|row| row.abbreviation.clone())
+        .collect();
+    let rows = display_rows.into_iter().enumerate().map(|(index, row)| {
+        let favorite = app.config().is_favorite(&row.name, &row.abbreviation);
+        row.into_table_row(theme, index == selected_row, favorite, star, flags_on)
+    });
     let table = Table::new(
         rows,
         [
@@ -149,6 +147,24 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
     .header(header)
     .column_spacing(1);
     frame.render_widget(table, table_area);
+
+    if flags_on {
+        for (index, code) in codes.iter().enumerate() {
+            let Ok(offset) = u16::try_from(index) else {
+                break;
+            };
+            let y = table_area.y + 1 + offset;
+            if y >= table_area.y + table_area.height {
+                break;
+            }
+            flag_image::render_inline(
+                app.flags(),
+                frame,
+                code,
+                Rect::new(table_area.x + STANDINGS_FLAG_X, y, LIST_FLAG_COLS, 1),
+            );
+        }
+    }
 }
 
 fn group_selector(groups: &[Group], selected: usize, theme: &Theme) -> Line<'static> {
@@ -223,7 +239,7 @@ impl StandingDisplayRow {
         selected: bool,
         favorite: bool,
         star: &str,
-        flag: Vec<Span<'static>>,
+        flags_on: bool,
     ) -> Row<'static> {
         let mut style = match self.qualification {
             Qualification::Qualified => Style::new().fg(theme.ok),
@@ -244,9 +260,10 @@ impl StandingDisplayRow {
         } else {
             self.team
         };
-        let mut team_spans = flag;
-        if !team_spans.is_empty() {
-            team_spans.push(Span::raw(" "));
+        let mut team_spans = Vec::new();
+        if flags_on {
+            // Blank slot for an overlaid flag image (see STANDINGS_FLAG_X).
+            team_spans.push(Span::raw(" ".repeat(usize::from(LIST_FLAG_COLS) + 1)));
         }
         team_spans.push(Span::styled(name, style));
         Row::new(vec![
@@ -265,8 +282,9 @@ impl StandingDisplayRow {
     }
 }
 
-/// Inline flag width (cells) for standings rows.
+/// Inline flag width (cells) and x-offset of the flag within the table.
 const LIST_FLAG_COLS: u16 = 4;
+const STANDINGS_FLAG_X: u16 = 3;
 
 fn format_goal_diff(diff: i16) -> String {
     if diff > 0 {

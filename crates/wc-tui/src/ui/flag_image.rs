@@ -15,9 +15,12 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 
 use image::{DynamicImage, RgbaImage};
+use ratatui::Frame;
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
-use ratatui::text::Span;
+use ratatui::text::{Line, Span};
+use ratatui::widgets::Paragraph;
+use ratatui_image::Image;
 use ratatui_image::Resize;
 use ratatui_image::picker::{Picker, ProtocolType};
 use ratatui_image::protocol::Protocol;
@@ -54,6 +57,30 @@ pub fn swatch(code: &str, cols: u16) -> Option<Vec<Span<'static>>> {
             .map(|(top, bottom)| Span::styled("\u{2580}", Style::new().fg(top).bg(bottom)))
             .collect(),
     )
+}
+
+/// Draw an inline flag into `rect` for a list row: a real image when the
+/// terminal has graphics support, otherwise the half-block swatch. No-op when no
+/// flag exists for the code.
+pub fn render_inline(
+    store: Option<&RefCell<FlagStore>>,
+    frame: &mut Frame,
+    code: &str,
+    rect: Rect,
+) {
+    if rect.width == 0 || rect.height == 0 {
+        return;
+    }
+    if let Some(store) = store {
+        let mut store = store.borrow_mut();
+        if let Some(protocol) = store.flag(code, rect.width, rect.height) {
+            frame.render_widget(Image::new(protocol), rect);
+            return;
+        }
+    }
+    if let Some(spans) = swatch(code, rect.width) {
+        frame.render_widget(Paragraph::new(Line::from(spans)), rect);
+    }
 }
 
 fn rasterize_swatch(code: &str, cols: u16) -> Option<SwatchPixels> {

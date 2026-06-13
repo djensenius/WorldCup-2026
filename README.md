@@ -26,7 +26,7 @@ Rust and [ratatui](https://ratatui.rs).
   favourites are highlighted (★) across every screen and can filter the Matches
   list.
 - Small inline **flags** beside each team in the Matches, Standings, and Team
-  lists (colored half-blocks, on any terminal).
+  lists (real images on graphics terminals, colored half-blocks otherwise).
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), nine colour themes (including Catppuccin and a
   Government of Canada palette), real national flags via terminal graphics

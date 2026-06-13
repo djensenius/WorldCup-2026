@@ -29,12 +29,12 @@ filters the list down to fixtures involving a favourite.
 ## Flags
 
 The **Live** card shows a large pair of real national flags either side of the
-score. The **Matches** and **Standings** lists show a small inline flag beside
-each team. On terminals that support inline graphics — Kitty, Ghostty, WezTerm,
-Konsole, iTerm2, or anything with Sixel — the big Live flags render as crisp
-images; the small inline flags are colored half-blocks that work on any
-terminal. Press `f` on the Live screen to toggle flags on or off (saved to your
-config as `show_flags`).
+score, and the **Matches**, **Standings**, and **Team** lists show a small flag
+beside each team. On terminals that support inline graphics — Kitty, Ghostty,
+WezTerm, Konsole, iTerm2, or anything with Sixel — every flag is a crisp image;
+on terminals without graphics the small list flags fall back to colored
+half-blocks (the big Live flags are omitted). Press `f` on the Live screen to
+toggle flags on or off (saved to your config as `show_flags`).
 
 The protocol is detected from environment variables only — we never issue a
 terminal query, which can break key input inside multiplexers.

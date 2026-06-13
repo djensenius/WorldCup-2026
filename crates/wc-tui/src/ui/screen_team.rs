@@ -91,7 +91,8 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
         .min(fixtures.len().saturating_sub(1));
     let pref = &app.config().ui.timezone;
     let offset = app.local_offset();
-    let lines = fixture_lines(
+    let show_flags = app.config().ui.show_flags;
+    let (lines, placements) = fixture_lines(
         &fixtures,
         selected,
         usize::from(list_area.height),
@@ -100,14 +101,27 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
             icons,
             pref,
             offset,
-            show_flags: app.config().ui.show_flags,
+            show_flags,
         },
     );
     frame.render_widget(
         Paragraph::new(lines).style(Style::new().fg(theme.fg)),
         list_area,
     );
+    for (row_offset, code) in placements {
+        let y = list_area.y + row_offset;
+        flag_image::render_inline(
+            app.flags(),
+            frame,
+            &code,
+            Rect::new(list_area.x + TEAM_FLAG_X, y, TEAM_FLAG_COLS, 1),
+        );
+    }
 }
+
+/// Inline flag width (cells) and x-offset within a fixture row.
+const TEAM_FLAG_COLS: u16 = 4;
+const TEAM_FLAG_X: u16 = 17;
 
 /// Handle a key for the team overlay. Returns `true` if consumed.
 pub fn handle_key(app: &mut App, key: KeyEvent) -> bool {
@@ -267,21 +281,35 @@ struct FixtureCtx<'a> {
     show_flags: bool,
 }
 
-/// Build the windowed fixture rows that fit in `height` lines.
+/// Build the windowed fixture rows that fit in `height` lines, plus the flag
+/// overlay placements (visible-row offset and opponent code) for each row.
 fn fixture_lines(
     rows: &[Fixture<'_>],
     selected: usize,
     height: usize,
     ctx: FixtureCtx,
-) -> Vec<Line<'static>> {
+) -> (Vec<Line<'static>>, Vec<(u16, String)>) {
     let available = height.max(1);
     let start = selected.saturating_sub(available.saturating_sub(1));
-    rows.iter()
+    let mut lines = Vec::new();
+    let mut placements = Vec::new();
+    for (offset, (index, &entry)) in rows
+        .iter()
         .enumerate()
         .skip(start)
         .take(available)
-        .map(|(index, &entry)| fixture_row_line(entry, index == selected, ctx))
-        .collect()
+        .enumerate()
+    {
+        lines.push(fixture_row_line(entry, index == selected, ctx));
+        if ctx.show_flags
+            && let Ok(row_offset) = u16::try_from(offset)
+        {
+            let (m, is_home) = entry;
+            let opponent = if is_home { &m.away } else { &m.home };
+            placements.push((row_offset, opponent.abbreviation.clone()));
+        }
+    }
+    (lines, placements)
 }
 
 /// A single selectable fixture row.
@@ -311,9 +339,9 @@ fn fixture_row_line(entry: Fixture<'_>, selected: bool, ctx: FixtureCtx) -> Line
         Span::styled(format!("{date:<11} "), Style::new().fg(theme.dim)),
         Span::styled(format!("{side} "), Style::new().fg(theme.dim)),
     ];
-    if show_flags && let Some(swatch) = flag_image::swatch(&opponent.abbreviation, 4) {
-        spans.extend(swatch);
-        spans.push(Span::raw(" "));
+    if show_flags {
+        // Blank slot for an overlaid flag image (see TEAM_FLAG_X).
+        spans.push(Span::raw(" ".repeat(usize::from(TEAM_FLAG_COLS) + 1)));
     }
     spans.push(Span::styled(format!("{opponent_name:<18} "), base));
 
