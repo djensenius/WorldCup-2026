@@ -158,6 +158,7 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
                 break;
             }
             flag_image::render_inline(
+                app.flags(),
                 frame,
                 code,
                 Rect::new(table_area.x + STANDINGS_FLAG_X, y, LIST_FLAG_COLS, 1),

@@ -53,6 +53,9 @@ struct ViewSignature {
     team: bool,
     help: bool,
     live_selected: usize,
+    matches_selected: usize,
+    standings_group: usize,
+    team_selected: usize,
     show_flags: bool,
     width: u16,
     height: u16,
@@ -249,19 +252,16 @@ impl App {
                 break;
             }
             if redraw {
-                // The Live card draws real flag images through a terminal
-                // graphics protocol, which ratatui's cell diff cannot erase.
-                // Clear when the change involves the Live view (entering,
-                // leaving, switching match, toggling flags, or an overlay over
-                // it) or a resize, so stale images don't bleed across tabs or
-                // linger. Pure text-tab switches need no clear, so they don't
-                // flash.
+                // Flag images (the Live card and the inline list flags) are
+                // drawn through a terminal graphics protocol, which ratatui's
+                // cell diff cannot erase. Whenever the view identity changes
+                // (tab, overlay, selected match, list scroll, flag toggle,
+                // resize) clear first so stale images don't bleed across tabs or
+                // smear as a list scrolls. Only needed when real images are
+                // active; swatch/text views diff cleanly, so they never flash.
                 let sig = self.view_signature(terminal.size()?);
                 if sig != last_sig {
-                    let live = Screen::Live.index();
-                    let touches_live = last_sig.screen == live || sig.screen == live;
-                    let resized = (last_sig.width, last_sig.height) != (sig.width, sig.height);
-                    if touches_live || resized {
+                    if self.images_active() {
                         terminal.clear()?;
                     }
                     last_sig = sig;
@@ -282,10 +282,20 @@ impl App {
             team: self.team.is_some(),
             help: self.show_help,
             live_selected: self.ui_state.live_selected,
+            matches_selected: self.ui_state.matches_selected,
+            standings_group: self.ui_state.standings_group,
+            team_selected: self.ui_state.team_selected,
             show_flags: self.config.ui.show_flags,
             width: size.width,
             height: size.height,
         }
+    }
+
+    /// Whether real flag images (not half-block swatches) are being drawn: flags
+    /// are enabled and the terminal has a graphics protocol. Only then does a
+    /// view change need a full clear to erase stale images.
+    fn images_active(&self) -> bool {
+        self.config.ui.show_flags && self.flags.is_some()
     }
 
     // --- accessors used by the UI -----------------------------------------

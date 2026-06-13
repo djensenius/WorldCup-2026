@@ -4,11 +4,12 @@
 //! with `resvg`, and drawn through [`ratatui_image`] using the Kitty, iTerm2, or
 //! Sixel protocol when the terminal supports it. The big Live-card flags need a
 //! real graphics protocol and are omitted on terminals without one. The small
-//! list flags ([`render_inline`]) are drawn as half-block [`swatch`]es sampled
-//! from the same SVGs: plain coloured cells redraw cleanly as a list scrolls,
-//! whereas inline graphics images leave artifacts because the Kitty/iTerm2
-//! protocols don't reliably clear them when rows shift. The active protocol is
-//! detected once at startup (overridable with the `WC26_GRAPHICS` variable).
+//! list flags ([`render_inline`]) use a real image when graphics are available
+//! and otherwise fall back to a half-block [`swatch`] so they still appear on
+//! any terminal. Because graphics-protocol images aren't erased by ratatui's
+//! cell diff, the event loop clears the terminal when a flag-bearing view
+//! scrolls or changes (see `App::run`). The active protocol is detected once at
+//! startup (overridable with the `WC26_GRAPHICS` environment variable).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -19,6 +20,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use ratatui_image::Image;
 use ratatui_image::Resize;
 use ratatui_image::picker::{Picker, ProtocolType};
 use ratatui_image::protocol::Protocol;
@@ -59,15 +61,28 @@ pub fn swatch(code: &str, cols: u16) -> Option<Vec<Span<'static>>> {
     })
 }
 
-/// Draw an inline flag into `rect` for a list row, as a half-block [`swatch`]
-/// sampled from the SVG. Swatches are plain coloured cells (not a terminal
-/// graphics image), so they redraw cleanly as a list scrolls — unlike inline
-/// images, which the Kitty/iTerm2 protocols don't reliably clear when rows
-/// shift. No-op when no flag exists for the code. The big Live card uses
-/// full-resolution images instead (see [`FlagStore::flag`]); it never scrolls.
-pub fn render_inline(frame: &mut Frame, code: &str, rect: Rect) {
+/// Draw an inline flag into `rect` for a list row: a real image when the
+/// terminal has graphics support, otherwise the half-block [`swatch`]. No-op
+/// when no flag exists for the code.
+///
+/// The caller is responsible for clearing the terminal when a list scrolls or
+/// the view changes: graphics-protocol images aren't erased by ratatui's cell
+/// diff, so without a clear they would smear as rows shift (see `App::run`).
+pub fn render_inline(
+    store: Option<&RefCell<FlagStore>>,
+    frame: &mut Frame,
+    code: &str,
+    rect: Rect,
+) {
     if rect.width == 0 || rect.height == 0 {
         return;
+    }
+    if let Some(store) = store {
+        let mut store = store.borrow_mut();
+        if let Some(protocol) = store.flag(code, rect.width, rect.height) {
+            frame.render_widget(Image::new(protocol), rect);
+            return;
+        }
     }
     if let Some(spans) = swatch(code, rect.width) {
         frame.render_widget(Paragraph::new(Line::from(spans)), rect);
