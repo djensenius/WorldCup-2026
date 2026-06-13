@@ -25,14 +25,13 @@ use crate::ui::theme::Theme;
 
 /// How many upcoming fixtures to cycle through when nothing is live.
 const UPCOMING_LIMIT: usize = 24;
-/// Flag image size in cells (≈3:2 at a typical 1:2 cell aspect).
-const FLAG_COLS: u16 = 15;
+/// Flag image size in cells (about 4:3 at a typical 1:2 cell aspect).
+const FLAG_COLS: u16 = 14;
 const FLAG_ROWS: u16 = 5;
-/// Lines of text in a card (status, gap, names, 5 score rows, gap, event, gap,
-/// footer). Used to centre the card vertically and to place the flag images.
-const CARD_LINES: u16 = 12;
-/// Row offset of the big-score block within the card.
-const SCORE_ROW: u16 = 3;
+/// Rows occupied by the big-score glyphs.
+const SCORE_ROWS: u16 = 5;
+/// Horizontal gap (cells) between a flag and the score.
+const FLAG_GAP: u16 = 3;
 
 /// Render the live screen.
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
@@ -70,18 +69,99 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let selected = app.ui_state.live_selected.min(cards.len() - 1);
     let m = cards[selected];
     let score = score_centre(app, m, is_live);
-    let lines = card_lines(app, m, selected, cards.len(), is_live, &score, theme);
-    let pad = usize::from(inner.height).saturating_sub(lines.len()) / 2;
-    let mut all = vec![Line::from(""); pad];
-    all.extend(lines);
-    frame.render_widget(
-        Paragraph::new(all)
-            .alignment(Alignment::Center)
-            .style(Style::new().fg(theme.fg)),
-        inner,
-    );
+    let score_w = big_width(&score);
+    let score_color = if is_live { theme.warn } else { theme.accent };
 
-    render_flags(app, frame, inner, m, &score, pad);
+    // A flag column is shown either side of the score when flags are enabled,
+    // both teams have a flag, and there is room.
+    let want_flags = app.config().ui.show_flags
+        && app.flags().is_some()
+        && flag_available(app, &m.home.abbreviation)
+        && flag_available(app, &m.away.abbreviation);
+    let block_w = if want_flags {
+        FLAG_COLS * 2 + FLAG_GAP * 2 + score_w
+    } else {
+        score_w
+    };
+    let flags = want_flags && block_w <= inner.width;
+
+    // Vertically centred block: status, gap, names, body (flags/score), gap,
+    // context, gap, pager.
+    let body_h = FLAG_ROWS.max(SCORE_ROWS);
+    let total_h = body_h + 7;
+    let top = inner.y + inner.height.saturating_sub(total_h) / 2;
+    let names_y = top + 2;
+    let body_y = top + 3;
+    let context_y = body_y + body_h + 1;
+    let pager_y = context_y + 2;
+
+    let full = |y: u16| Rect::new(inner.x, y, inner.width, 1);
+    centered(frame, full(top), status_line(app, m, is_live, theme));
+
+    if flags {
+        let block_x = (inner.x + inner.width / 2).saturating_sub(block_w / 2);
+        let home_x = block_x;
+        let score_x = block_x + FLAG_COLS + FLAG_GAP;
+        let away_x = score_x + score_w + FLAG_GAP;
+        let flag_y = body_y + (body_h - FLAG_ROWS) / 2;
+        let score_y = body_y + (body_h - SCORE_ROWS) / 2;
+
+        centered(
+            frame,
+            Rect::new(home_x, names_y, FLAG_COLS, 1),
+            team_name_line(app, &m.home, FLAG_COLS, theme),
+        );
+        centered(
+            frame,
+            Rect::new(away_x, names_y, FLAG_COLS, 1),
+            team_name_line(app, &m.away, FLAG_COLS, theme),
+        );
+        render_flag(
+            app,
+            frame,
+            &m.home.abbreviation,
+            Rect::new(home_x, flag_y, FLAG_COLS, FLAG_ROWS),
+        );
+        render_flag(
+            app,
+            frame,
+            &m.away.abbreviation,
+            Rect::new(away_x, flag_y, FLAG_COLS, FLAG_ROWS),
+        );
+        frame.render_widget(
+            Paragraph::new(big_glyphs(&score, score_color)),
+            Rect::new(score_x, score_y, score_w, SCORE_ROWS),
+        );
+    } else {
+        centered(frame, full(names_y), names_line(app, m, theme));
+        let score_y = body_y + (body_h - SCORE_ROWS) / 2;
+        frame.render_widget(
+            Paragraph::new(big_glyphs(&score, score_color)).alignment(Alignment::Center),
+            Rect::new(inner.x, score_y, inner.width, SCORE_ROWS),
+        );
+    }
+
+    let context = if is_live {
+        event_line(app, m, theme)
+    } else {
+        Line::from(Span::styled(context_tag(m), Style::new().fg(theme.dim)))
+    };
+    centered(frame, full(context_y), context);
+
+    let label = if is_live { "live" } else { "upcoming" };
+    centered(
+        frame,
+        full(pager_y),
+        Line::from(Span::styled(
+            format!("‹ {} / {} {label} ›", selected + 1, cards.len()),
+            Style::new().fg(theme.dim),
+        )),
+    );
+}
+
+/// Render a single line centred within `rect`.
+fn centered(frame: &mut Frame, rect: Rect, line: Line<'static>) {
+    frame.render_widget(Paragraph::new(line).alignment(Alignment::Center), rect);
 }
 
 /// The text shown big and centred: the live score, or the kickoff time.
@@ -93,48 +173,46 @@ fn score_centre(app: &App, m: &Match, is_live: bool) -> String {
     }
 }
 
-/// Overlay the two teams' flag images either side of the big-score block.
-fn render_flags(app: &App, frame: &mut Frame, inner: Rect, m: &Match, score: &str, pad: usize) {
-    if !app.config().ui.show_flags {
-        return;
-    }
-    let Some(flag_store) = app.flags() else {
+fn flag_available(app: &App, code: &str) -> bool {
+    app.flags().is_some_and(|store| {
+        store
+            .borrow_mut()
+            .flag(code, FLAG_COLS, FLAG_ROWS)
+            .is_some()
+    })
+}
+
+/// Draw a team's flag image into `rect`, if a flag exists for the code.
+fn render_flag(app: &App, frame: &mut Frame, code: &str, rect: Rect) {
+    let Some(store) = app.flags() else {
         return;
     };
-    if inner.height < CARD_LINES || pad > usize::from(u16::MAX) {
-        return;
+    let mut store = store.borrow_mut();
+    if let Some(protocol) = store.flag(code, rect.width, rect.height) {
+        frame.render_widget(Image::new(protocol), rect);
     }
-    let score_w = big_width(score);
-    let gap = 2u16;
-    let block_w = u32::from(FLAG_COLS) * 2 + u32::from(gap) * 2 + u32::from(score_w);
-    if block_w > u32::from(inner.width) {
-        return;
-    }
-    let pad = u16::try_from(pad).unwrap_or(u16::MAX);
-    let centre_x = inner.x + inner.width / 2;
-    let score_left = centre_x.saturating_sub(score_w / 2);
-    let flag_y = inner.y + pad + SCORE_ROW;
-    if flag_y + FLAG_ROWS > inner.y + inner.height {
-        return;
-    }
-    let left_x = score_left.saturating_sub(gap + FLAG_COLS);
-    let right_x = score_left + score_w + gap;
+}
 
-    let mut flag_store = flag_store.borrow_mut();
-    for (code, x) in [
-        (&m.home.abbreviation, left_x),
-        (&m.away.abbreviation, right_x),
-    ] {
-        if let Some(protocol) = flag_store.flag(code, FLAG_COLS, FLAG_ROWS) {
-            let rect = Rect::new(x, flag_y, FLAG_COLS, FLAG_ROWS);
-            frame.render_widget(Image::new(protocol), rect);
-        }
-    }
+/// A single team's name (or abbreviation when it would overflow `width`),
+/// styled bold and accented when the team is a favourite.
+fn team_name_line(app: &App, team: &Team, width: u16, theme: &Theme) -> Line<'static> {
+    let fav = app.config().is_favorite(&team.name, &team.abbreviation);
+    let style = if fav {
+        Style::new().fg(theme.accent).add_modifier(Modifier::BOLD)
+    } else {
+        Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
+    };
+    let name = if team.name.chars().count() <= usize::from(width) || team.abbreviation.is_empty() {
+        team.name.clone()
+    } else {
+        team.abbreviation.clone()
+    };
+    Line::from(Span::styled(name, style))
 }
 
 /// Width in cells of a big-glyph string (each glyph is 4 wide, 1-cell spaced).
 fn big_width(text: &str) -> u16 {
-    let n = text.chars().count() as u16;
+    let n = u16::try_from(text.chars().count()).unwrap_or(0);
     n.saturating_mul(4) + n.saturating_sub(1)
 }
 
@@ -215,49 +293,6 @@ fn upcoming_matches(matches: &[Match]) -> Vec<&Match> {
     upcoming
 }
 
-fn card_lines(
-    app: &App,
-    m: &Match,
-    index: usize,
-    total: usize,
-    is_live: bool,
-    score: &str,
-    theme: &Theme,
-) -> Vec<Line<'static>> {
-    let mut lines = Vec::new();
-
-    // Status line: clock + stage (live) or kickoff countdown (upcoming).
-    lines.push(status_line(app, m, is_live, theme));
-    lines.push(Line::from(""));
-
-    // Team names.
-    lines.push(names_line(app, m, theme));
-
-    // Big score (or kickoff time). Flags are overlaid separately as images.
-    let big = big_glyphs(score, if is_live { theme.warn } else { theme.accent });
-    lines.extend(big);
-
-    // Most recent event for the in-play match.
-    lines.push(Line::from(""));
-    if is_live {
-        lines.push(event_line(app, m, theme));
-    } else {
-        lines.push(Line::from(Span::styled(
-            context_tag(m),
-            Style::new().fg(theme.dim),
-        )));
-    }
-
-    // Footer: position + hints.
-    lines.push(Line::from(""));
-    let label = if is_live { "live" } else { "upcoming" };
-    lines.push(Line::from(Span::styled(
-        format!("‹ {} / {total} {label} ›", index + 1),
-        Style::new().fg(theme.dim),
-    )));
-    lines
-}
-
 fn status_line(app: &App, m: &Match, is_live: bool, theme: &Theme) -> Line<'static> {
     if is_live {
         let clock = live_clock(&m.status);
@@ -266,14 +301,17 @@ fn status_line(app: &App, m: &Match, is_live: bool, theme: &Theme) -> Line<'stat
                 format!("{} {clock}", app.icons().live()),
                 Style::new().fg(theme.warn).add_modifier(Modifier::BOLD),
             ),
-            Span::styled(format!("   {}", context_tag(m)), Style::new().fg(theme.dim)),
+            Span::styled(
+                format!("  ·  {}", context_tag(m)),
+                Style::new().fg(theme.dim),
+            ),
         ])
     } else {
         let day = timefmt::date_heading(m.kickoff, &app.config().ui.timezone, app.local_offset());
         let countdown = countdown(m.kickoff);
         Line::from(vec![
             Span::styled(day, Style::new().fg(theme.fg)),
-            Span::styled(format!("   {countdown}"), Style::new().fg(theme.accent)),
+            Span::styled(format!("  ·  {countdown}"), Style::new().fg(theme.accent)),
         ])
     }
 }

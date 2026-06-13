@@ -24,6 +24,7 @@ use crate::app::{App, TeamNav};
 use crate::config::TimezonePref;
 use crate::data::Remote;
 use crate::timefmt;
+use crate::ui::flag_image;
 use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
@@ -93,11 +94,14 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let lines = fixture_lines(
         &fixtures,
         selected,
-        theme,
-        icons,
-        pref,
-        offset,
         usize::from(list_area.height),
+        FixtureCtx {
+            theme,
+            icons,
+            pref,
+            offset,
+            show_flags: app.config().ui.show_flags,
+        },
     );
     frame.render_widget(
         Paragraph::new(lines).style(Style::new().fg(theme.fg)),
@@ -253,15 +257,22 @@ fn form_spans(fixtures: &[Fixture<'_>], theme: &Theme) -> Vec<Span<'static>> {
         .collect()
 }
 
+/// Shared context for rendering fixture rows.
+#[derive(Clone, Copy)]
+struct FixtureCtx<'a> {
+    theme: &'a Theme,
+    icons: Icons,
+    pref: &'a TimezonePref,
+    offset: UtcOffset,
+    show_flags: bool,
+}
+
 /// Build the windowed fixture rows that fit in `height` lines.
 fn fixture_lines(
     rows: &[Fixture<'_>],
     selected: usize,
-    theme: &Theme,
-    icons: Icons,
-    pref: &TimezonePref,
-    offset: UtcOffset,
     height: usize,
+    ctx: FixtureCtx,
 ) -> Vec<Line<'static>> {
     let available = height.max(1);
     let start = selected.saturating_sub(available.saturating_sub(1));
@@ -269,21 +280,19 @@ fn fixture_lines(
         .enumerate()
         .skip(start)
         .take(available)
-        .map(|(index, &entry)| {
-            fixture_row_line(entry, index == selected, theme, icons, pref, offset)
-        })
+        .map(|(index, &entry)| fixture_row_line(entry, index == selected, ctx))
         .collect()
 }
 
 /// A single selectable fixture row.
-fn fixture_row_line(
-    entry: Fixture<'_>,
-    selected: bool,
-    theme: &Theme,
-    icons: Icons,
-    pref: &TimezonePref,
-    offset: UtcOffset,
-) -> Line<'static> {
+fn fixture_row_line(entry: Fixture<'_>, selected: bool, ctx: FixtureCtx) -> Line<'static> {
+    let FixtureCtx {
+        theme,
+        icons,
+        pref,
+        offset,
+        show_flags,
+    } = ctx;
     let (m, is_home) = entry;
     let base = row_base_style(m, selected, theme);
     let mark_style = if selected {
@@ -301,8 +310,12 @@ fn fixture_row_line(
         Span::styled(format!("{mark} "), mark_style),
         Span::styled(format!("{date:<11} "), Style::new().fg(theme.dim)),
         Span::styled(format!("{side} "), Style::new().fg(theme.dim)),
-        Span::styled(format!("{opponent_name:<18} "), base),
     ];
+    if show_flags && let Some(swatch) = flag_image::swatch(&opponent.abbreviation, 4) {
+        spans.extend(swatch);
+        spans.push(Span::raw(" "));
+    }
+    spans.push(Span::styled(format!("{opponent_name:<18} "), base));
 
     if has_started(m) {
         spans.push(Span::styled(

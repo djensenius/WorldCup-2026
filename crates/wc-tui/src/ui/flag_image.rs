@@ -6,15 +6,70 @@
 //! support no flags are drawn by default (half-blocks are only used if the user
 //! forces `WC26_GRAPHICS=halfblocks`). The active protocol is detected once at
 //! startup (overridable with the `WC26_GRAPHICS` environment variable).
+//!
+//! For list screens (Matches, Standings) a tiny inline [`swatch`] is available:
+//! the same SVG rasterized to a single half-block row, returned as styled spans
+//! so it scrolls with the text and works on any terminal.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use image::{DynamicImage, RgbaImage};
 use ratatui::layout::Rect;
+use ratatui::style::{Color, Style};
+use ratatui::text::Span;
 use ratatui_image::Resize;
 use ratatui_image::picker::{Picker, ProtocolType};
 use ratatui_image::protocol::Protocol;
 use resvg::usvg;
+
+/// Top/bottom pixel colours for each cell of a one-row half-block swatch.
+type SwatchPixels = Vec<(Color, Color)>;
+
+thread_local! {
+    /// Per-render-thread cache of rasterized swatch pixel pairs, keyed by
+    /// `(team code, width in cells)`. The TUI renders on one thread.
+    static SWATCH_CACHE: RefCell<HashMap<(String, u16), Option<SwatchPixels>>> =
+        RefCell::new(HashMap::new());
+}
+
+/// A tiny inline flag for list rows: the real flag rasterized to one half-block
+/// row `cols` cells wide, returned as styled spans. `None` when no flag exists.
+#[must_use]
+pub fn swatch(code: &str, cols: u16) -> Option<Vec<Span<'static>>> {
+    if cols == 0 {
+        return None;
+    }
+    let key = (code.to_ascii_uppercase(), cols);
+    let pixels = SWATCH_CACHE.with(|cache| {
+        cache
+            .borrow_mut()
+            .entry(key.clone())
+            .or_insert_with(|| rasterize_swatch(&key.0, cols))
+            .clone()
+    })?;
+    Some(
+        pixels
+            .into_iter()
+            .map(|(top, bottom)| Span::styled("\u{2580}", Style::new().fg(top).bg(bottom)))
+            .collect(),
+    )
+}
+
+fn rasterize_swatch(code: &str, cols: u16) -> Option<SwatchPixels> {
+    let svg = svg(code)?;
+    let image = rasterize(svg, u32::from(cols), 2)?.to_rgba8();
+    let mut pairs = Vec::with_capacity(usize::from(cols));
+    for x in 0..u32::from(cols) {
+        let top = image.get_pixel(x, 0).0;
+        let bottom = image.get_pixel(x, 1).0;
+        pairs.push((
+            Color::Rgb(top[0], top[1], top[2]),
+            Color::Rgb(bottom[0], bottom[1], bottom[2]),
+        ));
+    }
+    Some(pairs)
+}
 
 /// Detect (or force) a terminal graphics picker. Returns `None` when no real
 /// graphics protocol is available or graphics are disabled, in which case flags

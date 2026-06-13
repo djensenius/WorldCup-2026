@@ -13,6 +13,7 @@ use wc_data::domain::{Group, GroupStanding};
 
 use crate::app::App;
 use crate::data::Remote;
+use crate::ui::flag_image;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
 
@@ -123,13 +124,18 @@ fn render_groups(app: &App, frame: &mut Frame, area: Rect, groups: &[Group]) {
         .enumerate()
         .map(|(index, row)| {
             let favorite = app.config().is_favorite(&row.name, &row.abbreviation);
-            row.into_table_row(theme, index == selected_row, favorite, star)
+            let flag = if app.config().ui.show_flags {
+                flag_image::swatch(&row.abbreviation, LIST_FLAG_COLS).unwrap_or_default()
+            } else {
+                Vec::new()
+            };
+            row.into_table_row(theme, index == selected_row, favorite, star, flag)
         });
     let table = Table::new(
         rows,
         [
             Constraint::Length(2),
-            Constraint::Min(16),
+            Constraint::Min(22),
             Constraint::Length(4),
             Constraint::Length(4),
             Constraint::Length(4),
@@ -217,6 +223,7 @@ impl StandingDisplayRow {
         selected: bool,
         favorite: bool,
         star: &str,
+        flag: Vec<Span<'static>>,
     ) -> Row<'static> {
         let mut style = match self.qualification {
             Qualification::Qualified => Style::new().fg(theme.ok),
@@ -232,14 +239,19 @@ impl StandingDisplayRow {
         } else {
             style
         };
-        let team = if favorite {
+        let name = if favorite {
             format!("{} {star}", self.team)
         } else {
             self.team
         };
+        let mut team_spans = flag;
+        if !team_spans.is_empty() {
+            team_spans.push(Span::raw(" "));
+        }
+        team_spans.push(Span::styled(name, style));
         Row::new(vec![
             Cell::from(marker).style(marker_style),
-            Cell::from(team),
+            Cell::from(Line::from(team_spans)),
             Cell::from(self.played),
             Cell::from(self.won),
             Cell::from(self.drawn),
@@ -252,6 +264,9 @@ impl StandingDisplayRow {
         .style(style)
     }
 }
+
+/// Inline flag width (cells) for standings rows.
+const LIST_FLAG_COLS: u16 = 4;
 
 fn format_goal_diff(diff: i16) -> String {
     if diff > 0 {

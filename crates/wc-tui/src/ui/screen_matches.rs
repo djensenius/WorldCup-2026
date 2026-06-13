@@ -17,6 +17,7 @@ use wc_data::domain::{Match, MatchStatus, Stage, Team};
 use crate::app::App;
 use crate::data::Remote;
 use crate::timefmt;
+use crate::ui::flag_image;
 use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
@@ -182,6 +183,7 @@ fn schedule_lines(
             selected_line = all.len();
         }
         all.push(match_row_line(
+            app,
             m,
             theme,
             icons,
@@ -196,7 +198,11 @@ fn schedule_lines(
     all.into_iter().skip(start).take(available).collect()
 }
 
+/// Inline flag width (cells) for list rows.
+const LIST_FLAG_COLS: u16 = 4;
+
 fn match_row_line(
+    app: &App,
     m: &Match,
     theme: &Theme,
     icons: Icons,
@@ -224,15 +230,37 @@ fn match_row_line(
     } else {
         (" ", Style::new().fg(theme.dim))
     };
-    Line::from(vec![
+    let mut spans = vec![
         Span::styled(format!("{marker} "), marker_style),
         Span::styled(format!("{kickoff:<5}  "), Style::new().fg(theme.dim)),
-        Span::styled(format!("{:>6}", team_label(&m.home)), team_style),
-        Span::styled(format!(" {:^11} ", score_text(m)), row_style),
-        Span::styled(format!("{:<6}", team_label(&m.away)), team_style),
-        Span::styled("  ", row_style),
-        status_span(&m.status, theme, icons),
-    ])
+    ];
+    push_swatch(&mut spans, app, &m.home.abbreviation);
+    spans.push(Span::styled(
+        format!("{:>6}", team_label(&m.home)),
+        team_style,
+    ));
+    spans.push(Span::styled(format!(" {:^11} ", score_text(m)), row_style));
+    spans.push(Span::styled(
+        format!("{:<6}", team_label(&m.away)),
+        team_style,
+    ));
+    push_swatch(&mut spans, app, &m.away.abbreviation);
+    spans.push(Span::styled("  ", row_style));
+    spans.push(status_span(&m.status, theme, icons));
+    Line::from(spans)
+}
+
+/// Append a small inline flag swatch (and a spacer) for `code`, when flags are
+/// enabled and a flag exists.
+fn push_swatch(spans: &mut Vec<Span<'static>>, app: &App, code: &str) {
+    if !app.config().ui.show_flags {
+        return;
+    }
+    if let Some(swatch) = flag_image::swatch(code, LIST_FLAG_COLS) {
+        spans.push(Span::raw(" "));
+        spans.extend(swatch);
+        spans.push(Span::raw(" "));
+    }
 }
 
 fn status_span(status: &MatchStatus, theme: &Theme, icons: Icons) -> Span<'static> {
