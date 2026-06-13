@@ -78,13 +78,11 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     for place in placements {
         let y = inner.y + place.offset;
         flag_image::render_inline(
-            app.flags(),
             frame,
             &place.home,
             Rect::new(inner.x + HOME_FLAG_X, y, LIST_FLAG_COLS, 1),
         );
         flag_image::render_inline(
-            app.flags(),
             frame,
             &place.away,
             Rect::new(inner.x + AWAY_FLAG_X, y, LIST_FLAG_COLS, 1),

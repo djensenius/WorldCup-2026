@@ -111,7 +111,6 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     for (row_offset, code) in placements {
         let y = list_area.y + row_offset;
         flag_image::render_inline(
-            app.flags(),
             frame,
             &code,
             Rect::new(list_area.x + TEAM_FLAG_X, y, TEAM_FLAG_COLS, 1),
