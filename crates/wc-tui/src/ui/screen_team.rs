@@ -461,7 +461,7 @@ fn find_standing<'a>(groups: &'a [Group], id: &str, name: &str) -> Option<&'a Gr
 
 /// Match a team by provider id (when known) or a case-insensitive name.
 fn team_matches(team: &Team, id: &str, name: &str) -> bool {
-    (!id.is_empty() && team.id == id) || team.name.to_lowercase() == name.to_lowercase()
+    (!id.is_empty() && team.id == id) || team.name.eq_ignore_ascii_case(name)
 }
 
 /// The result of a finished fixture from the focused team's perspective.
