@@ -22,6 +22,21 @@ use crate::app::App;
 use crate::ui::screens::Screen;
 use crate::ui::toast::{Level, Toasts};
 
+/// Coarse "time ago" label for the freshness indicator. Deliberately avoids
+/// second precision: the event loop only repaints when something changes, so a
+/// per-second value would appear frozen between refreshes. Minute-bucketed text
+/// stays accurate across the poll-driven redraws that do happen.
+fn format_age(age: std::time::Duration) -> String {
+    let secs = age.as_secs();
+    if secs < 60 {
+        "just now".to_owned()
+    } else if secs < 3600 {
+        format!("{}m ago", secs / 60)
+    } else {
+        format!("{}h ago", secs / 3600)
+    }
+}
+
 /// Render the entire UI for one frame.
 pub fn render(app: &App, frame: &mut Frame) {
     let areas = Layout::vertical([
@@ -105,7 +120,7 @@ fn render_status_bar(app: &App, frame: &mut Frame, area: Rect) {
         spans.push(Span::raw("  "));
     } else if let Some(age) = app.active_data_age() {
         spans.push(Span::styled(
-            format!("updated {}s ago", age.as_secs()),
+            format!("updated {}", format_age(age)),
             Style::new().fg(theme.dim),
         ));
         spans.push(Span::raw("  "));
@@ -211,4 +226,24 @@ fn render_help(app: &App, frame: &mut Frame, area: Rect) {
             .style(Style::new().fg(theme.fg)),
         rect,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_age;
+    use std::time::Duration;
+
+    #[test]
+    fn age_under_a_minute_reads_just_now() {
+        assert_eq!(format_age(Duration::from_secs(0)), "just now");
+        assert_eq!(format_age(Duration::from_secs(59)), "just now");
+    }
+
+    #[test]
+    fn age_buckets_into_minutes_then_hours() {
+        assert_eq!(format_age(Duration::from_mins(1)), "1m ago");
+        assert_eq!(format_age(Duration::from_secs(125)), "2m ago");
+        assert_eq!(format_age(Duration::from_hours(1)), "1h ago");
+        assert_eq!(format_age(Duration::from_hours(2)), "2h ago");
+    }
 }

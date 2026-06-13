@@ -302,6 +302,7 @@ impl App {
             || self.bracket.is_refreshing()
             || self.calendar.is_refreshing()
             || self.detail_poller.is_refreshing()
+            || self.live_focus.is_refreshing()
     }
 
     /// Scoreboard data (used by Matches and Live).
@@ -647,6 +648,12 @@ impl App {
             changed = true;
         }
 
+        // Starting any poll flips the "⟳ refreshing" indicator on, so redraw
+        // once when that happens (and again when the data drains in). Capture
+        // the state before the live-focus poll too, so its refreshes are also
+        // reflected. This is a handful of redraws per poll interval, not per tick.
+        let refreshing_before = self.is_refreshing();
+
         // Keep the Live screen's "most recent event" fresh for the focused
         // in-play match (only while that screen is open).
         if matches!(self.screen, Screen::Live) && self.detail.is_none() && self.team.is_none() {
@@ -667,10 +674,6 @@ impl App {
         } else {
             IDLE_POLL
         };
-        // Starting a refresh flips the "⟳ refreshing" indicator on, so redraw
-        // once when that happens (and again when the data drains in). This is a
-        // handful of redraws per poll interval, not per tick.
-        let refreshing_before = self.is_refreshing();
         if self.scoreboard.is_due(interval) {
             self.refresh_scoreboard();
         }
