@@ -27,9 +27,11 @@ use crate::ui::theme::Theme;
 
 /// How many upcoming fixtures to cycle through when nothing is live.
 const UPCOMING_LIMIT: usize = 24;
-/// Flag image size in cells (about 4:3 at a typical 1:2 cell aspect).
-const FLAG_COLS: u16 = 14;
-const FLAG_ROWS: u16 = 5;
+/// Flag image size in cells. flag-icons art is 4:3; at a typical 1:2 cell
+/// aspect ~20×8 cells fills that ratio. `Resize::Fit` letterboxes within it,
+/// so a little slack here never distorts the flag.
+const FLAG_COLS: u16 = 20;
+const FLAG_ROWS: u16 = 8;
 /// Rows occupied by the big-score glyphs.
 const SCORE_ROWS: u16 = 5;
 /// Horizontal gap (cells) between a flag and the score.

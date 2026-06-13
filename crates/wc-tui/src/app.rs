@@ -209,17 +209,31 @@ impl App {
         let mut events = EventLoop::new(TICK);
         terminal.draw(|frame| ui::render(&self, frame))?;
         loop {
-            match events.next().await {
+            // Only redraw when something actually changed. Redrawing on every
+            // idle tick re-transmits every flag image (a full image escape per
+            // frame), which makes them flash on graphics terminals.
+            let redraw = match events.next().await {
                 AppEvent::Tick => self.on_tick(),
-                AppEvent::Key(key) => self.on_key(key),
-                AppEvent::Mouse(mouse) => self.on_mouse(mouse),
-                AppEvent::Resize => {}
-                AppEvent::Error(err) => self.toasts.error(err),
-            }
+                AppEvent::Key(key) => {
+                    self.on_key(key);
+                    true
+                }
+                AppEvent::Mouse(mouse) => {
+                    self.on_mouse(mouse);
+                    true
+                }
+                AppEvent::Resize => true,
+                AppEvent::Error(err) => {
+                    self.toasts.error(err);
+                    true
+                }
+            };
             if self.should_quit {
                 break;
             }
-            terminal.draw(|frame| ui::render(&self, frame))?;
+            if redraw {
+                terminal.draw(|frame| ui::render(&self, frame))?;
+            }
         }
         Ok(())
     }
@@ -577,12 +591,17 @@ impl App {
 
     // --- polling ----------------------------------------------------------
 
-    fn on_tick(&mut self) {
-        self.toasts.expire();
-        if matches!(self.scoreboard.drain(), Some(Ok(())))
-            && let Some(matches) = self.scoreboard.state().value()
-        {
-            self.cache.store(CACHE_SCOREBOARD, matches);
+    /// Process a tick: expire toasts, drain pollers, and schedule refreshes.
+    /// Returns `true` when something visible changed and the UI should redraw.
+    fn on_tick(&mut self) -> bool {
+        let mut changed = self.toasts.expire();
+        if let Some(result) = self.scoreboard.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(matches) = self.scoreboard.state().value()
+            {
+                self.cache.store(CACHE_SCOREBOARD, matches);
+            }
         }
         // Once the schedule is available, default the Matches selection to the
         // current (or next) game rather than the first fixture of the tournament.
@@ -595,24 +614,38 @@ impl App {
         {
             self.ui_state.matches_selected = index;
             self.ui_state.matches_selected_initialized = true;
+            changed = true;
         }
-        if matches!(self.standings.drain(), Some(Ok(())))
-            && let Some(groups) = self.standings.state().value()
-        {
-            self.cache.store(CACHE_STANDINGS, groups);
+        if let Some(result) = self.standings.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(groups) = self.standings.state().value()
+            {
+                self.cache.store(CACHE_STANDINGS, groups);
+            }
         }
-        if matches!(self.bracket.drain(), Some(Ok(())))
-            && let Some(tree) = self.bracket.state().value()
-        {
-            self.cache.store(CACHE_BRACKET, tree);
+        if let Some(result) = self.bracket.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(tree) = self.bracket.state().value()
+            {
+                self.cache.store(CACHE_BRACKET, tree);
+            }
         }
-        if matches!(self.calendar.drain(), Some(Ok(())))
-            && let Some(cal) = self.calendar.state().value()
-        {
-            self.cache.store(CACHE_CALENDAR, cal);
+        if let Some(result) = self.calendar.drain() {
+            changed = true;
+            if result.is_ok()
+                && let Some(cal) = self.calendar.state().value()
+            {
+                self.cache.store(CACHE_CALENDAR, cal);
+            }
         }
-        self.detail_poller.drain();
-        self.live_focus.drain();
+        if self.detail_poller.drain().is_some() {
+            changed = true;
+        }
+        if self.live_focus.drain().is_some() {
+            changed = true;
+        }
 
         // Keep the Live screen's "most recent event" fresh for the focused
         // in-play match (only while that screen is open).
@@ -634,6 +667,10 @@ impl App {
         } else {
             IDLE_POLL
         };
+        // Starting a refresh flips the "⟳ refreshing" indicator on, so redraw
+        // once when that happens (and again when the data drains in). This is a
+        // handful of redraws per poll interval, not per tick.
+        let refreshing_before = self.is_refreshing();
         if self.scoreboard.is_due(interval) {
             self.refresh_scoreboard();
         }
@@ -648,6 +685,7 @@ impl App {
         if self.detail.is_some() && self.detail_poller.is_due(DETAIL_POLL) {
             self.refresh_detail();
         }
+        changed || self.is_refreshing() != refreshing_before
     }
 
     fn any_live(&self) -> bool {

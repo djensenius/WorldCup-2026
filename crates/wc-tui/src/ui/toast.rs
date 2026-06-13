@@ -61,10 +61,12 @@ impl Toasts {
         }
     }
 
-    /// Drop expired toasts. Call each tick.
-    pub fn expire(&mut self) {
+    /// Drop expired toasts. Call each tick. Returns `true` if any were removed.
+    pub fn expire(&mut self) -> bool {
         let now = Instant::now();
+        let before = self.items.len();
         self.items.retain(|t| t.expires_at > now);
+        self.items.len() != before
     }
 
     /// The currently visible toasts, oldest first.
