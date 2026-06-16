@@ -56,7 +56,7 @@ toml = "0.8"
 directories = "5"
 
 # TUI + async runtime + CLI
-ratatui = { version = "0.30", default-features = false, features = ["crossterm", "underline-color"] }
+ratatui = { version = "0.30", default-features = false, features = ["crossterm", "underline-color", "all-widgets"] }
 ratatui-image = { version = "10", default-features = false, features = ["crossterm"] }
 resvg = "0.45"
 image = { version = "0.25", default-features = false, features = ["png"] }
