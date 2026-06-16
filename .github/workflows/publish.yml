@@ -180,21 +180,30 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
-          crate_version_is_searchable() {
+          crate_version_exists() {
             crate="$1"
             version="$2"
-            search_output="$(cargo search "$crate" --limit 100)" || {
-              echo "::error::Unable to search crates.io for $crate."
-              exit 1
+            status="$(curl --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --retry-all-errors --silent --show-error --output /dev/null --write-out '%{http_code}' --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}")" || {
+              echo "::error::Could not query crates.io API for ${crate} ${version}."
+              return 2
             }
-            printf '%s\n' "$search_output" | awk -v crate="$crate" -v version="$version" \
-              '$1 == crate && $2 == "=" && $3 == "\"" version "\"" { found = 1 } END { exit found ? 0 : 1 }'
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              429|5??) echo "::error::Transient crates.io API status ${status} for ${crate} ${version}; retry this workflow."; return 2 ;;
+              *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; return 2 ;;
+            esac
           }
 
           version="${VERSION#v}"
-          if crate_version_is_searchable "wc-data" "$version"; then
+          if crate_version_exists "wc-data" "$version"; then
             echo "wc-data $version is already published; skipping."
             exit 0
+          else
+            exists_status="$?"
+            if [ "$exists_status" -ne 1 ]; then
+              exit 1
+            fi
           fi
           cargo publish -p wc-data --locked
       - name: Wait for wc-data to be indexed
@@ -203,26 +212,30 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
-          crate_version_is_searchable() {
+          crate_version_exists() {
             crate="$1"
             version="$2"
-            search_output="$(cargo search "$crate" --limit 100)" || {
-              echo "::error::Unable to search crates.io for $crate."
-              exit 1
+            status="$(curl --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --retry-all-errors --silent --show-error --output /dev/null --write-out '%{http_code}' --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}")" || {
+              echo "::warning::Could not query crates.io API for ${crate} ${version}; retrying."
+              return 2
             }
-            printf '%s\n' "$search_output" | awk -v crate="$crate" -v version="$version" \
-              '$1 == crate && $2 == "=" && $3 == "\"" version "\"" { found = 1 } END { exit found ? 0 : 1 }'
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              429|5??) echo "::warning::Transient crates.io API status ${status} for ${crate} ${version}; retrying."; return 2 ;;
+              *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; exit 1 ;;
+            esac
           }
 
           version="${VERSION#v}"
           for attempt in $(seq 1 30); do
-            if crate_version_is_searchable "wc-data" "$version"; then
+            if crate_version_exists "wc-data" "$version"; then
               exit 0
             fi
-            echo "wc-data $version is not indexed yet (attempt $attempt/30); waiting..."
+            echo "wc-data $version is not visible from the crates.io API yet (attempt $attempt/30); waiting..."
             sleep 10
           done
-          echo "::error::wc-data $version was not visible in the crates.io index in time."
+          echo "::error::wc-data $version was not visible from the crates.io API in time."
           exit 1
       - name: Publish worldcup26
         if: ${{ needs.resolve.outputs.draft != 'true' }}
@@ -231,21 +244,30 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
-          crate_version_is_searchable() {
+          crate_version_exists() {
             crate="$1"
             version="$2"
-            search_output="$(cargo search "$crate" --limit 100)" || {
-              echo "::error::Unable to search crates.io for $crate."
-              exit 1
+            status="$(curl --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 --retry-all-errors --silent --show-error --output /dev/null --write-out '%{http_code}' --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}")" || {
+              echo "::error::Could not query crates.io API for ${crate} ${version}."
+              return 2
             }
-            printf '%s\n' "$search_output" | awk -v crate="$crate" -v version="$version" \
-              '$1 == crate && $2 == "=" && $3 == "\"" version "\"" { found = 1 } END { exit found ? 0 : 1 }'
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              429|5??) echo "::error::Transient crates.io API status ${status} for ${crate} ${version}; retry this workflow."; return 2 ;;
+              *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; return 2 ;;
+            esac
           }
 
           version="${VERSION#v}"
-          if crate_version_is_searchable "worldcup26" "$version"; then
+          if crate_version_exists "worldcup26" "$version"; then
             echo "worldcup26 $version is already published; skipping."
             exit 0
+          else
+            exists_status="$?"
+            if [ "$exists_status" -ne 1 ]; then
+              exit 1
+            fi
           fi
           cargo publish -p worldcup26 --locked
 
