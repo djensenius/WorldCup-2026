@@ -183,7 +183,12 @@ jobs:
           crate_version_exists() {
             crate="$1"
             version="$2"
-            curl --fail --silent --show-error --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}" > /dev/null
+            status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}")"
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; exit 1 ;;
+            esac
           }
 
           version="${VERSION#v}"
@@ -201,7 +206,12 @@ jobs:
           crate_version_exists() {
             crate="$1"
             version="$2"
-            curl --fail --silent --show-error --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}" > /dev/null
+            status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}")"
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; exit 1 ;;
+            esac
           }
 
           version="${VERSION#v}"
@@ -209,10 +219,10 @@ jobs:
             if crate_version_exists "wc-data" "$version"; then
               exit 0
             fi
-            echo "wc-data $version is not indexed yet (attempt $attempt/30); waiting..."
+            echo "wc-data $version is not visible from the crates.io API yet (attempt $attempt/30); waiting..."
             sleep 10
           done
-          echo "::error::wc-data $version was not visible in the crates.io index in time."
+          echo "::error::wc-data $version was not visible from the crates.io API in time."
           exit 1
       - name: Publish worldcup26
         if: ${{ needs.resolve.outputs.draft != 'true' }}
@@ -224,7 +234,12 @@ jobs:
           crate_version_exists() {
             crate="$1"
             version="$2"
-            curl --fail --silent --show-error --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}" > /dev/null
+            status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --header "User-Agent: WorldCup-2026 release workflow" "https://crates.io/api/v1/crates/${crate}/${version}")"
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; exit 1 ;;
+            esac
           }
 
           version="${VERSION#v}"
