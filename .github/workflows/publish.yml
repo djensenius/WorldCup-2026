@@ -190,6 +190,7 @@ jobs:
             case "$status" in
               200) return 0 ;;
               404) return 1 ;;
+              429|5??) echo "::error::Transient crates.io API status ${status} for ${crate} ${version}; retry this workflow."; return 2 ;;
               *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; return 2 ;;
             esac
           }
@@ -253,6 +254,7 @@ jobs:
             case "$status" in
               200) return 0 ;;
               404) return 1 ;;
+              429|5??) echo "::error::Transient crates.io API status ${status} for ${crate} ${version}; retry this workflow."; return 2 ;;
               *) echo "::error::Unexpected crates.io API status ${status} for ${crate} ${version}."; return 2 ;;
             esac
           }
