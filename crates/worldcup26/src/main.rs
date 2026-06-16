@@ -114,7 +114,8 @@ async fn run(cli: Cli, local_offset: UtcOffset) -> Result<()> {
 }
 
 fn parse_timezone(value: &str) -> Result<TimezonePref> {
-    match value.trim().to_ascii_lowercase().as_str() {
+    let value = value.trim();
+    match value.to_ascii_lowercase().as_str() {
         "local" => Ok(TimezonePref::Local),
         "utc" => Ok(TimezonePref::Utc),
         _ => {
@@ -124,8 +125,19 @@ fn parse_timezone(value: &str) -> Result<TimezonePref> {
             if (-23..=23).contains(&hours) {
                 Ok(TimezonePref::FixedOffset(hours))
             } else {
-                bail!("timezone hour offset must be between -23 and 23");
+                bail!("timezone hour offset must be between -23 and 23")
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{TimezonePref, parse_timezone};
+
+    #[test]
+    fn parse_timezone_trims_fixed_offsets() {
+        let timezone = parse_timezone(" -4 ").expect("timezone parses");
+        assert!(matches!(timezone, TimezonePref::FixedOffset(-4)));
     }
 }

@@ -83,11 +83,14 @@ fn guess_from_env(
 ) -> Option<ProtocolType> {
     let term = env("TERM").unwrap_or_default().to_ascii_lowercase();
     let program = env("TERM_PROGRAM").unwrap_or_default().to_ascii_lowercase();
-    if env("WEZTERM_EXECUTABLE").is_ok() || env("WEZTERM_PANE").is_ok() || program == "wezterm" {
+    if env_non_empty(&mut env, "WEZTERM_EXECUTABLE")
+        || env_non_empty(&mut env, "WEZTERM_PANE")
+        || program == "wezterm"
+    {
         return Some(ProtocolType::Iterm2);
     }
-    if env("KITTY_WINDOW_ID").is_ok()
-        || env("KONSOLE_VERSION").is_ok()
+    if env_non_empty(&mut env, "KITTY_WINDOW_ID")
+        || env_non_empty(&mut env, "KONSOLE_VERSION")
         || term.contains("kitty")
         || term.contains("ghostty")
         || program == "ghostty"
@@ -95,6 +98,13 @@ fn guess_from_env(
         return Some(ProtocolType::Kitty);
     }
     None
+}
+
+fn env_non_empty(
+    env: &mut impl FnMut(&str) -> Result<String, std::env::VarError>,
+    key: &str,
+) -> bool {
+    env(key).is_ok_and(|value| !value.is_empty())
 }
 
 fn guess_from_tmux() -> Option<ProtocolType> {
@@ -334,5 +344,16 @@ mod tests {
             _ => Err(std::env::VarError::NotPresent),
         });
         assert_eq!(protocol, Some(ProtocolType::Kitty));
+    }
+
+    #[test]
+    fn empty_env_hints_are_ignored() {
+        let protocol = guess_from_env(|key| match key {
+            "WEZTERM_EXECUTABLE" | "WEZTERM_PANE" | "KITTY_WINDOW_ID" | "KONSOLE_VERSION" => {
+                Ok(String::new())
+            }
+            _ => Err(std::env::VarError::NotPresent),
+        });
+        assert_eq!(protocol, None);
     }
 }
