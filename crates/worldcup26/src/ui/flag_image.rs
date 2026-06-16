@@ -3,12 +3,14 @@
 //! Flags are vendored as SVGs (see `assets/flags/ATTRIBUTION.md`), rasterized
 //! with `resvg`, and drawn through [`ratatui_image`] using the Kitty, iTerm2, or
 //! Sixel protocol when the terminal supports it. By default, the big Live-card
-//! flags need a real graphics protocol and are omitted on terminals without one;
-//! `WORLDCUP26_GRAPHICS=halfblocks` can force a text-cell fallback. Because real
-//! graphics-protocol images aren't erased by ratatui's cell diff, the event loop
-//! clears the terminal when the Live card changes or is left (see `App::run`).
-//! The active protocol is detected once at startup (overridable with the
-//! `WORLDCUP26_GRAPHICS` environment variable).
+//! flags require one of those real graphics protocols and are omitted on
+//! terminals without image support. Users can opt into a text-cell fallback with
+//! `WORLDCUP26_GRAPHICS=halfblocks`. Because real graphics-protocol images
+//! aren't erased by ratatui's cell diff, the event loop clears the terminal when
+//! the Live card changes or is left (see `App::run`); forced halfblocks are just
+//! regular terminal cells and do not need those clears. The active protocol is
+//! detected once at startup (overridable with the `WORLDCUP26_GRAPHICS`
+//! environment variable).
 
 use std::collections::HashMap;
 
@@ -21,7 +23,8 @@ use resvg::usvg;
 
 /// Detect (or force) a terminal graphics picker. Returns `None` when no real
 /// graphics protocol is available or graphics are disabled; in that case the
-/// Live-card flags are skipped unless halfblocks are explicitly forced.
+/// Live-card flags are omitted by default. `WORLDCUP26_GRAPHICS=halfblocks`
+/// explicitly forces a text-cell fallback instead.
 ///
 /// Detection is environment-based only — we never issue an interactive terminal
 /// query, which can desync stdin and break key handling inside multiplexers and

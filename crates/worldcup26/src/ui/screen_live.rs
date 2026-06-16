@@ -2,8 +2,9 @@
 //!
 //! Shows one match at a time, big enough to read across a room: a large
 //! block-digit score flanked by real national flags (rendered as inline images
-//! when the terminal supports graphics, otherwise omitted), the clock, and the
-//! most recent event (goal/card). `j`/`k` cycles through the in-play matches
+//! when the terminal supports graphics, omitted otherwise unless
+//! `WORLDCUP26_GRAPHICS=halfblocks` forces a text-cell fallback), the clock, and
+//! the most recent event (goal/card). `j`/`k` cycles through the in-play matches
 //! (or the soonest upcoming fixtures when nothing is live, with a countdown),
 //! `Enter` opens the full match detail, and `f` toggles the flags.
 
