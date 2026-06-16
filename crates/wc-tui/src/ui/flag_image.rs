@@ -127,6 +127,7 @@ pub fn make_picker() -> Option<Picker> {
     }
     // Builds a picker, detecting tmux + outer protocol from the environment and
     // marking `is_tmux` so escapes are wrapped in tmux passthrough. No stdin.
+    #[allow(deprecated)]
     let mut picker = Picker::from_fontsize(guess_font_size());
     let protocol = forced
         .as_deref()
