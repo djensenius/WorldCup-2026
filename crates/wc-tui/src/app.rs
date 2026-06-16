@@ -53,9 +53,6 @@ struct ViewSignature {
     team: bool,
     help: bool,
     live_selected: usize,
-    matches_selected: usize,
-    standings_group: usize,
-    team_selected: usize,
     show_flags: bool,
     width: u16,
     height: u16,
@@ -252,13 +249,12 @@ impl App {
                 break;
             }
             if redraw {
-                // Flag images (the Live card and the inline list flags) are
-                // drawn through a terminal graphics protocol, which ratatui's
-                // cell diff cannot erase. Whenever the view identity changes
-                // (tab, overlay, selected match, list scroll, flag toggle,
-                // resize) clear first so stale images don't bleed across tabs or
-                // smear as a list scrolls. Only needed when real images are
-                // active; swatch/text views diff cleanly, so they never flash.
+                // Live-card flag images are drawn through a terminal graphics
+                // protocol, which ratatui's cell diff cannot erase. Whenever
+                // the view identity changes (tab, overlay, selected match, flag
+                // toggle, resize), clear first so stale images don't bleed
+                // across tabs. Only needed when real images are active; text
+                // views diff cleanly, so they never flash.
                 let sig = self.view_signature(terminal.size()?);
                 if sig != last_sig {
                     if self.images_active() {
@@ -282,18 +278,15 @@ impl App {
             team: self.team.is_some(),
             help: self.show_help,
             live_selected: self.ui_state.live_selected,
-            matches_selected: self.ui_state.matches_selected,
-            standings_group: self.ui_state.standings_group,
-            team_selected: self.ui_state.team_selected,
             show_flags: self.config.ui.show_flags,
             width: size.width,
             height: size.height,
         }
     }
 
-    /// Whether real flag images (not half-block swatches) are being drawn: flags
-    /// are enabled and the terminal has a graphics protocol. Only then does a
-    /// view change need a full clear to erase stale images.
+    /// Whether real flag images are available to draw: flags are enabled and the
+    /// terminal has a graphics protocol. Only then does a view change need a full
+    /// clear to erase stale images.
     fn images_active(&self) -> bool {
         self.config.ui.show_flags && self.flags.is_some()
     }

@@ -3,111 +3,24 @@
 //! Flags are vendored as SVGs (see `assets/flags/ATTRIBUTION.md`), rasterized
 //! with `resvg`, and drawn through [`ratatui_image`] using the Kitty, iTerm2, or
 //! Sixel protocol when the terminal supports it. The big Live-card flags need a
-//! real graphics protocol and are omitted on terminals without one. The small
-//! list flags ([`render_inline`]) use a real image when graphics are available
-//! and otherwise fall back to a half-block [`swatch`] so they still appear on
-//! any terminal. Because graphics-protocol images aren't erased by ratatui's
-//! cell diff, the event loop clears the terminal when a flag-bearing view
-//! scrolls or changes (see `App::run`). The active protocol is detected once at
-//! startup (overridable with the `WC26_GRAPHICS` environment variable).
+//! real graphics protocol and are omitted on terminals without one. Because
+//! graphics-protocol images aren't erased by ratatui's cell diff, the event loop
+//! clears the terminal when the Live card changes or is left (see `App::run`).
+//! The active protocol is detected once at startup (overridable with the
+//! `WC26_GRAPHICS` environment variable).
 
-use std::cell::RefCell;
 use std::collections::HashMap;
 
 use image::{DynamicImage, RgbaImage};
-use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Style};
-use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
-use ratatui_image::Image;
 use ratatui_image::Resize;
 use ratatui_image::picker::{Picker, ProtocolType};
 use ratatui_image::protocol::Protocol;
 use resvg::usvg;
 
-/// Top/bottom pixel colours for each cell of a one-row half-block swatch.
-type SwatchPixels = Vec<(Color, Color)>;
-
-thread_local! {
-    /// Per-render-thread cache of rasterized swatch pixel pairs, keyed by
-    /// `(team code, width in cells)`. The TUI renders on one thread.
-    static SWATCH_CACHE: RefCell<HashMap<(String, u16), Option<SwatchPixels>>> =
-        RefCell::new(HashMap::new());
-}
-
-/// A tiny inline flag for list rows: the real flag rasterized to one half-block
-/// row `cols` cells wide, returned as styled spans. `None` when no flag exists.
-#[must_use]
-pub fn swatch(code: &str, cols: u16) -> Option<Vec<Span<'static>>> {
-    if cols == 0 {
-        return None;
-    }
-    let key = (code.to_ascii_uppercase(), cols);
-    // Build the spans while holding the cache borrow so we never clone the
-    // cached pixel vector — this runs for every flag on every list frame.
-    SWATCH_CACHE.with(|cache| {
-        let mut cache = cache.borrow_mut();
-        let pixels = cache
-            .entry(key.clone())
-            .or_insert_with(|| rasterize_swatch(&key.0, cols))
-            .as_ref()?;
-        Some(
-            pixels
-                .iter()
-                .map(|&(top, bottom)| Span::styled("\u{2580}", Style::new().fg(top).bg(bottom)))
-                .collect(),
-        )
-    })
-}
-
-/// Draw an inline flag into `rect` for a list row: a real image when the
-/// terminal has graphics support, otherwise the half-block [`swatch`]. No-op
-/// when no flag exists for the code.
-///
-/// The caller is responsible for clearing the terminal when a list scrolls or
-/// the view changes: graphics-protocol images aren't erased by ratatui's cell
-/// diff, so without a clear they would smear as rows shift (see `App::run`).
-pub fn render_inline(
-    store: Option<&RefCell<FlagStore>>,
-    frame: &mut Frame,
-    code: &str,
-    rect: Rect,
-) {
-    if rect.width == 0 || rect.height == 0 {
-        return;
-    }
-    if let Some(store) = store {
-        let mut store = store.borrow_mut();
-        if let Some(protocol) = store.flag(code, rect.width, rect.height) {
-            frame.render_widget(Image::new(protocol), rect);
-            return;
-        }
-    }
-    if let Some(spans) = swatch(code, rect.width) {
-        frame.render_widget(Paragraph::new(Line::from(spans)), rect);
-    }
-}
-
-fn rasterize_swatch(code: &str, cols: u16) -> Option<SwatchPixels> {
-    let svg = svg(code)?;
-    let image = rasterize(svg, u32::from(cols), 2)?.to_rgba8();
-    let mut pairs = Vec::with_capacity(usize::from(cols));
-    for x in 0..u32::from(cols) {
-        let top = image.get_pixel(x, 0).0;
-        let bottom = image.get_pixel(x, 1).0;
-        pairs.push((
-            Color::Rgb(top[0], top[1], top[2]),
-            Color::Rgb(bottom[0], bottom[1], bottom[2]),
-        ));
-    }
-    Some(pairs)
-}
-
 /// Detect (or force) a terminal graphics picker. Returns `None` when no real
-/// graphics protocol is available or graphics are disabled; in that case the big
-/// Live-card flags are skipped while the small list flags still fall back to
-/// half-block swatches (see [`render_inline`]).
+/// graphics protocol is available or graphics are disabled; in that case the
+/// Live-card flags are skipped.
 ///
 /// Detection is environment-based only — we never issue an interactive terminal
 /// query, which can desync stdin and break key handling inside multiplexers and

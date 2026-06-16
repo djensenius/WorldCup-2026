@@ -10,7 +10,6 @@ license = "Apache-2.0"
 authors = ["David Jensenius"]
 repository = "https://github.com/djensenius/WorldCup-2026"
 homepage = "https://github.com/djensenius/WorldCup-2026"
-publish = false
 
 [profile.release]
 strip = "symbols"
@@ -45,7 +44,7 @@ cast_possible_wrap = "allow"
 
 [workspace.dependencies]
 # Workspace crates
-wc-data = { path = "crates/wc-data" }
+wc-data = { version = "0.2.0", path = "crates/wc-data" }
 
 # Serialization + errors
 serde = { version = "1", features = ["derive"] }

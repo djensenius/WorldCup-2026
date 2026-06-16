@@ -17,7 +17,6 @@ use wc_data::domain::{Match, MatchStatus, Stage, Team};
 use crate::app::App;
 use crate::data::Remote;
 use crate::timefmt;
-use crate::ui::flag_image;
 use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
@@ -60,36 +59,18 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
         .ui_state
         .matches_selected
         .min(rows.len().saturating_sub(1));
-    let flags_on = app.config().ui.show_flags;
-    let (lines, placements) = schedule_lines(
+    let lines = schedule_lines(
         &rows,
         selected,
         theme,
         app.icons(),
         app,
         usize::from(inner.height),
-        flags_on,
     );
     let paragraph = Paragraph::new(lines)
         .style(Style::new().fg(theme.fg))
         .wrap(Wrap { trim: false });
     frame.render_widget(paragraph, inner);
-
-    for place in placements {
-        let y = inner.y + place.offset;
-        flag_image::render_inline(
-            app.flags(),
-            frame,
-            &place.home,
-            Rect::new(inner.x + HOME_FLAG_X, y, LIST_FLAG_COLS, 1),
-        );
-        flag_image::render_inline(
-            app.flags(),
-            frame,
-            &place.away,
-            Rect::new(inner.x + AWAY_FLAG_X, y, LIST_FLAG_COLS, 1),
-        );
-    }
 }
 
 /// Handle a key for the matches screen. Returns `true` if consumed.
@@ -162,18 +143,6 @@ fn current_or_next_index(rows: &[&Match], now: OffsetDateTime) -> usize {
         .unwrap_or(rows.len() - 1)
 }
 
-/// Inline flag width (cells) and x-offsets within a match row.
-const LIST_FLAG_COLS: u16 = 4;
-const HOME_FLAG_X: u16 = 9;
-const AWAY_FLAG_X: u16 = 40;
-
-/// Where to overlay a match row's flags: visible-row offset and team codes.
-struct FlagPlace {
-    offset: u16,
-    home: String,
-    away: String,
-}
-
 fn schedule_lines(
     rows: &[&Match],
     selected: usize,
@@ -181,10 +150,8 @@ fn schedule_lines(
     icons: Icons,
     app: &App,
     height: usize,
-    flags_on: bool,
-) -> (Vec<Line<'static>>, Vec<FlagPlace>) {
+) -> Vec<Line<'static>> {
     let mut all: Vec<Line<'static>> = Vec::new();
-    let mut meta: Vec<Option<(String, String)>> = Vec::new();
     let mut current_day = String::new();
     let mut current_stage = String::new();
     let selected_id = rows.get(selected).map(|m| m.id.as_str());
@@ -195,14 +162,12 @@ fn schedule_lines(
         if day != current_day {
             if !all.is_empty() {
                 all.push(Line::from(""));
-                meta.push(None);
             }
             current_day.clone_from(&day);
             all.push(Line::from(Span::styled(
                 day,
                 Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
             )));
-            meta.push(None);
             current_stage.clear();
         }
         let stage = section_label(m);
@@ -212,7 +177,6 @@ fn schedule_lines(
                 format!("  {stage}"),
                 Style::new().fg(theme.dim).add_modifier(Modifier::BOLD),
             )));
-            meta.push(None);
         }
         if Some(m.id.as_str()) == selected_id {
             selected_line = all.len();
@@ -224,27 +188,12 @@ fn schedule_lines(
             &timefmt::time_hm(m.kickoff, &app.config().ui.timezone, app.local_offset()),
             involves_favorite(app, m),
             Some(m.id.as_str()) == selected_id,
-            flags_on,
         ));
-        meta.push(flags_on.then(|| (m.home.abbreviation.clone(), m.away.abbreviation.clone())));
     }
 
     let available = height.max(1);
     let start = selected_line.saturating_sub(available.saturating_sub(1));
-    let mut placements = Vec::new();
-    for (offset, index) in (start..start + available).enumerate() {
-        if let Some(Some((home, away))) = meta.get(index)
-            && let Ok(offset) = u16::try_from(offset)
-        {
-            placements.push(FlagPlace {
-                offset,
-                home: home.clone(),
-                away: away.clone(),
-            });
-        }
-    }
-    let lines = all.into_iter().skip(start).take(available).collect();
-    (lines, placements)
+    all.into_iter().skip(start).take(available).collect()
 }
 
 fn match_row_line(
@@ -254,7 +203,6 @@ fn match_row_line(
     kickoff: &str,
     favorite: bool,
     selected: bool,
-    flags_on: bool,
 ) -> Line<'static> {
     let row_style = if selected {
         Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
@@ -276,16 +224,10 @@ fn match_row_line(
     } else {
         (" ", Style::new().fg(theme.dim))
     };
-    // Blank slot (flag + spacer) reserved for an overlaid flag image; kept in
-    // sync with HOME_FLAG_X / AWAY_FLAG_X.
-    let slot = " ".repeat(usize::from(LIST_FLAG_COLS) + 1);
     let mut spans = vec![
         Span::styled(format!("{marker} "), marker_style),
         Span::styled(format!("{kickoff:<5}  "), Style::new().fg(theme.dim)),
     ];
-    if flags_on {
-        spans.push(Span::raw(slot.clone()));
-    }
     spans.push(Span::styled(
         format!("{:>6}", team_label(&m.home)),
         team_style,
@@ -295,9 +237,6 @@ fn match_row_line(
         format!("{:<6}", team_label(&m.away)),
         team_style,
     ));
-    if flags_on {
-        spans.push(Span::raw(slot));
-    }
     spans.push(Span::styled("  ", row_style));
     spans.push(status_span(&m.status, theme, icons));
     Line::from(spans)

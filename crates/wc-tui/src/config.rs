@@ -56,10 +56,7 @@ pub struct UiSettings {
     pub theme: String,
     /// Use Nerd Font glyphs for icons.
     pub nerd_fonts: bool,
-    /// Show national flags: a large pair of images on the Live card and small
-    /// flags beside teams in the Matches, Standings, and Team lists. Real images
-    /// on terminals with graphics support; the small list flags fall back to
-    /// colored half-blocks elsewhere.
+    /// Show national flags on the Live card when the terminal supports graphics.
     pub show_flags: bool,
     /// How to display kickoff times.
     pub timezone: TimezonePref,

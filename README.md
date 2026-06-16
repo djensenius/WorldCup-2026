@@ -25,13 +25,48 @@ Rust and [ratatui](https://ratatui.rs).
 - **Favourite teams** — star teams with `*` from Standings or the team view;
   favourites are highlighted (★) across every screen and can filter the Matches
   list.
-- Small inline **flags** beside each team in the Matches, Standings, and Team
-  lists — real images on graphics-capable terminals, colored half-blocks
-  otherwise.
+- Real national **flags** on the Live card when the terminal supports graphics.
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), nine colour themes (including Catppuccin and a
-  Government of Canada palette), real national flags via terminal graphics
-  protocols, an offline cache, and mouse support.
+  Government of Canada palette), an offline cache, and mouse support.
+
+## Installation
+
+The crates.io package is named `wc-tui`; it installs the `wc26` command.
+
+### Requirements
+
+- Rust **1.95.0 or newer** with Cargo. Install it with
+  [rustup](https://rustup.rs/) if you do not already have Rust.
+- Native build tools for your OS:
+  - macOS: `xcode-select --install`
+  - Debian/Ubuntu: `sudo apt install build-essential`
+  - Windows: Visual Studio Build Tools with the MSVC toolchain
+- A terminal that supports standard TUI apps. Live flag images are shown only in
+  graphics-capable terminals such as Kitty, Ghostty, WezTerm, Konsole, iTerm2, or
+  Sixel-capable terminals; everything else works without graphics support.
+
+Install the latest released version from crates.io:
+
+```sh
+cargo install wc-tui --locked
+wc26
+```
+
+If `wc26` is not found after installation, add Cargo's bin directory to your
+`PATH` (`~/.cargo/bin` on macOS/Linux, `%USERPROFILE%\.cargo\bin` on Windows).
+
+`wc26` uses ESPN by default and does not require an API key. Optional providers
+can be enabled with `WC26_API_FOOTBALL_KEY` or `WC26_FOOTBALL_DATA_KEY`; see
+[Data providers](#data-providers).
+
+### Run from source
+
+```sh
+cargo run -p wc-tui --bin wc26
+```
+
+Requires the toolchain pinned in `rust-toolchain.toml`.
 
 ## Data providers
 
@@ -45,14 +80,6 @@ Rust and [ratatui](https://ratatui.rs).
 
 Select a provider with `--provider <espn|api-football|football-data>` or in the
 config file.
-
-## Build & run
-
-```sh
-cargo run -p wc-tui          # or: cargo run --bin wc26
-```
-
-Requires the toolchain pinned in `rust-toolchain.toml`.
 
 ## Keybindings
 
@@ -84,6 +111,24 @@ The full list, including per-screen and mouse bindings, is in
 - [Architecture](docs/architecture.md) — crates, data flow, polling, cache.
 - [Data providers](docs/data-providers.md) — providers, API keys, configuration.
 - [Keybindings](docs/keybindings.md) — full keyboard and mouse reference.
+
+## Release automation
+
+Releases are managed by
+[release-please](https://github.com/googleapis/release-please). Conventional
+Commits merged to `main` keep a Release PR open with the next version and
+changelog entry. Merging that Release PR creates the GitHub release, then
+dispatches the publish workflow.
+
+For non-draft releases, CI publishes both crates to crates.io in dependency
+order:
+
+1. `wc-data`
+2. `wc-tui` (installs the `wc26` binary)
+
+Repository setup requires a crates.io API token stored as the
+`CARGO_REGISTRY_TOKEN` GitHub Actions secret. The same publish workflow also
+builds the release archives and Debian packages attached to the GitHub release.
 
 ## License
 

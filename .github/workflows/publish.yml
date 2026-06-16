@@ -145,8 +145,76 @@ jobs:
           name: zip-x86_64-pc-windows-msvc
           path: dist/*.zip
 
+  publish-crates:
+    name: publish crates.io
+    needs: resolve
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
+        with:
+          toolchain: 1.95.0
+      - uses: Swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc # v2.9.1
+        with:
+          key: publish-crates
+      - name: Skip crates.io publish for draft releases
+        if: ${{ needs.resolve.outputs.draft == 'true' }}
+        run: echo "Draft release requested; skipping crates.io publish."
+      - name: Check crates.io token
+        if: ${{ needs.resolve.outputs.draft != 'true' }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          set -eu
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::error::CARGO_REGISTRY_TOKEN secret is required to publish to crates.io."
+            exit 1
+          fi
+      - name: Publish wc-data
+        if: ${{ needs.resolve.outputs.draft != 'true' }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          VERSION: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${VERSION#v}"
+          if cargo search wc-data --limit 1 | grep -q "^wc-data = \"$version\""; then
+            echo "wc-data $version is already published; skipping."
+            exit 0
+          fi
+          cargo publish -p wc-data --locked
+      - name: Wait for wc-data to be indexed
+        if: ${{ needs.resolve.outputs.draft != 'true' }}
+        env:
+          VERSION: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${VERSION#v}"
+          for attempt in $(seq 1 30); do
+            if cargo search wc-data --limit 1 | grep -q "^wc-data = \"$version\""; then
+              exit 0
+            fi
+            echo "wc-data $version is not indexed yet (attempt $attempt/30); waiting..."
+            sleep 10
+          done
+          echo "::error::wc-data $version was not visible in the crates.io index in time."
+          exit 1
+      - name: Publish wc-tui
+        if: ${{ needs.resolve.outputs.draft != 'true' }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          VERSION: ${{ needs.resolve.outputs.tag }}
+        run: |
+          set -euo pipefail
+          version="${VERSION#v}"
+          if cargo search wc-tui --limit 1 | grep -q "^wc-tui = \"$version\""; then
+            echo "wc-tui $version is already published; skipping."
+            exit 0
+          fi
+          cargo publish -p wc-tui --locked
+
   release:
-    needs: [resolve, build-deb, build-tarball, build-zip]
+    needs: [resolve, build-deb, build-tarball, build-zip, publish-crates]
     runs-on: ubuntu-latest
     permissions:
       contents: write

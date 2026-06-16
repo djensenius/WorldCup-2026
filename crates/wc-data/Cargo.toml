@@ -8,7 +8,9 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 homepage.workspace = true
-publish = false
+readme = "../../README.md"
+keywords = ["world-cup", "football", "soccer", "sports", "api"]
+categories = ["api-bindings"]
 
 [lints]
 workspace = true

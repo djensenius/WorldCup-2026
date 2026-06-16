@@ -84,10 +84,9 @@ kind = "espn"
 theme = "world-night"
 # Use Nerd Font glyphs for icons.
 nerd_fonts = false
-# Show national flags: real images on the Live card and the
-# Matches/Standings/Team lists (graphics-capable terminals), with small colored
-# half-blocks as the fallback elsewhere. Toggle at runtime with `f`. Graphics
-# support is auto-detected; force it with the WC26_GRAPHICS env var
+# Show national flags on the Live card when the terminal supports graphics.
+# Matches/Standings/Team/Bracket stay text-only. Toggle at runtime with `f`.
+# Graphics support is auto-detected; force it with the WC26_GRAPHICS env var
 # (kitty|iterm2|sixel|halfblocks|off).
 show_flags = true
 # Kickoff display: "local" (default) or "utc". A fixed whole-hour offset
