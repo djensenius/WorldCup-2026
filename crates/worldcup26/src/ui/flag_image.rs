@@ -2,8 +2,9 @@
 //!
 //! Flags are vendored as SVGs (see `assets/flags/ATTRIBUTION.md`), rasterized
 //! with `resvg`, and drawn through [`ratatui_image`] using the Kitty, iTerm2, or
-//! Sixel protocol when the terminal supports it. The big Live-card flags need a
-//! real graphics protocol and are omitted on terminals without one. Because
+//! Sixel protocol when the terminal supports it. By default, the big Live-card
+//! flags need a real graphics protocol and are omitted on terminals without one;
+//! `WORLDCUP26_GRAPHICS=halfblocks` can force a text-cell fallback. Because real
 //! graphics-protocol images aren't erased by ratatui's cell diff, the event loop
 //! clears the terminal when the Live card changes or is left (see `App::run`).
 //! The active protocol is detected once at startup (overridable with the
@@ -20,7 +21,7 @@ use resvg::usvg;
 
 /// Detect (or force) a terminal graphics picker. Returns `None` when no real
 /// graphics protocol is available or graphics are disabled; in that case the
-/// Live-card flags are skipped.
+/// Live-card flags are skipped unless halfblocks are explicitly forced.
 ///
 /// Detection is environment-based only — we never issue an interactive terminal
 /// query, which can desync stdin and break key handling inside multiplexers and
@@ -40,6 +41,7 @@ pub fn make_picker() -> Option<Picker> {
     }
     // Builds a picker, detecting tmux + outer protocol from the environment and
     // marking `is_tmux` so escapes are wrapped in tmux passthrough. No stdin.
+    #[allow(deprecated)]
     let mut picker = Picker::from_fontsize(guess_font_size());
     let protocol = forced
         .as_deref()
@@ -104,6 +106,12 @@ impl FlagStore {
             picker,
             cache: HashMap::new(),
         }
+    }
+
+    /// Whether the picker uses a real terminal graphics protocol whose output is
+    /// not erased by ratatui's cell diff.
+    pub fn uses_graphics_protocol(&self) -> bool {
+        self.picker.protocol_type() != ProtocolType::Halfblocks
     }
 
     /// Get (building and caching on first use) the flag protocol for `code`

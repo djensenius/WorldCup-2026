@@ -224,6 +224,7 @@ impl App {
     pub async fn run(mut self, terminal: &mut Tui) -> Result<()> {
         let mut events = EventLoop::new(TICK);
         let mut last_sig = self.view_signature(terminal.size()?);
+        let mut last_images_active = self.images_active();
         terminal.draw(|frame| ui::render(&self, frame))?;
         loop {
             // Only redraw when something actually changed. Redrawing on every
@@ -249,19 +250,20 @@ impl App {
                 break;
             }
             if redraw {
-                // Live-card flag images are drawn through a terminal graphics
-                // protocol, which ratatui's cell diff cannot erase. Whenever
-                // the view identity changes (tab, overlay, selected match, flag
-                // toggle, resize), clear first so stale images don't bleed
-                // across tabs. Only needed when real images are active; text
-                // views diff cleanly, so they never flash.
+                // Live-card flag images drawn through real terminal graphics
+                // protocols cannot be erased by ratatui's cell diff. Whenever
+                // the view identity changes, clear if either the previous or the
+                // next frame can contain those images; halfblocks/text diff
+                // cleanly, so forced halfblocks mode does not flash.
                 let sig = self.view_signature(terminal.size()?);
+                let images_active = self.images_active();
                 if sig != last_sig {
-                    if self.images_active() {
+                    if last_images_active || images_active {
                         terminal.clear()?;
                     }
                     last_sig = sig;
                 }
+                last_images_active = images_active;
                 terminal.draw(|frame| ui::render(&self, frame))?;
             }
         }
@@ -284,11 +286,15 @@ impl App {
         }
     }
 
-    /// Whether real flag images are available to draw: flags are enabled and the
-    /// terminal has a graphics protocol. Only then does a view change need a full
-    /// clear to erase stale images.
+    /// Whether real flag images are available to draw. Only real terminal
+    /// graphics protocols need a full clear on view changes; halfblocks are
+    /// normal cells and diff cleanly.
     fn images_active(&self) -> bool {
-        self.config.ui.show_flags && self.flags.is_some()
+        self.config.ui.show_flags
+            && self
+                .flags
+                .as_ref()
+                .is_some_and(|flags| flags.borrow().uses_graphics_protocol())
     }
 
     // --- accessors used by the UI -----------------------------------------
