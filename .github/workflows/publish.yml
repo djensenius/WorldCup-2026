@@ -159,7 +159,7 @@ jobs:
           key: publish-crates
       - name: Verify release lockfile
         if: ${{ needs.resolve.outputs.draft != 'true' }}
-        run: cargo metadata --locked --format-version 1 --no-deps
+        run: cargo metadata --locked --format-version 1 --no-deps > /dev/null
       - name: Skip crates.io publish for draft releases
         if: ${{ needs.resolve.outputs.draft == 'true' }}
         run: echo "Draft release requested; skipping crates.io publish."
