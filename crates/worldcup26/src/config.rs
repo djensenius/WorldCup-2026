@@ -3,7 +3,7 @@
 //! Stored as TOML in the platform config directory. Holds the data-provider
 //! selection and API keys, display preferences (theme, icons, timezone), and
 //! the user's favourite teams. API keys may also be supplied via the
-//! environment (`WC26_API_FOOTBALL_KEY`, `WC26_FOOTBALL_DATA_KEY`).
+//! environment (`WORLDCUP26_API_FOOTBALL_KEY`, `WORLDCUP26_FOOTBALL_DATA_KEY`).
 
 use std::path::{Path, PathBuf};
 
@@ -56,10 +56,7 @@ pub struct UiSettings {
     pub theme: String,
     /// Use Nerd Font glyphs for icons.
     pub nerd_fonts: bool,
-    /// Show national flags: a large pair of images on the Live card and small
-    /// flags beside teams in the Matches, Standings, and Team lists. Real images
-    /// on terminals with graphics support; the small list flags fall back to
-    /// colored half-blocks elsewhere.
+    /// Show national flags on the Live card when the terminal supports graphics.
     pub show_flags: bool,
     /// How to display kickoff times.
     pub timezone: TimezonePref,
@@ -102,7 +99,7 @@ impl Config {
     /// # Errors
     /// Returns an error if no config directory can be determined.
     pub fn default_path() -> Result<PathBuf> {
-        let dirs = directories::ProjectDirs::from("dev", "djensenius", "wc26")
+        let dirs = directories::ProjectDirs::from("dev", "djensenius", "worldcup26")
             .context("could not determine a config directory")?;
         Ok(dirs.config_dir().join("config.toml"))
     }
@@ -135,12 +132,12 @@ impl Config {
 
     /// Overlay API keys from the environment when set.
     pub fn merge_env(&mut self) {
-        if let Ok(key) = std::env::var("WC26_API_FOOTBALL_KEY")
+        if let Ok(key) = std::env::var("WORLDCUP26_API_FOOTBALL_KEY")
             && !key.trim().is_empty()
         {
             self.provider.api_football_key = Some(key);
         }
-        if let Ok(key) = std::env::var("WC26_FOOTBALL_DATA_KEY")
+        if let Ok(key) = std::env::var("WORLDCUP26_FOOTBALL_DATA_KEY")
             && !key.trim().is_empty()
         {
             self.provider.football_data_key = Some(key);

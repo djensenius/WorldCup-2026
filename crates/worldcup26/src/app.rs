@@ -53,9 +53,6 @@ struct ViewSignature {
     team: bool,
     help: bool,
     live_selected: usize,
-    matches_selected: usize,
-    standings_group: usize,
-    team_selected: usize,
     show_flags: bool,
     width: u16,
     height: u16,
@@ -167,7 +164,7 @@ impl App {
         let theme = Theme::from_name(theme::NAMES[theme_index]);
         let icons = Icons::new(config.ui.nerd_fonts);
         let mut toasts = Toasts::default();
-        toasts.info("Welcome to wc26. Press ? for help, q to quit.");
+        toasts.info("Welcome to WorldCup26. Press ? for help, q to quit.");
 
         let cache = Cache::new();
         let mut scoreboard = Poller::new();
@@ -227,6 +224,7 @@ impl App {
     pub async fn run(mut self, terminal: &mut Tui) -> Result<()> {
         let mut events = EventLoop::new(TICK);
         let mut last_sig = self.view_signature(terminal.size()?);
+        let mut last_images_active = self.images_active();
         terminal.draw(|frame| ui::render(&self, frame))?;
         loop {
             // Only redraw when something actually changed. Redrawing on every
@@ -252,20 +250,20 @@ impl App {
                 break;
             }
             if redraw {
-                // Flag images (the Live card and the inline list flags) are
-                // drawn through a terminal graphics protocol, which ratatui's
-                // cell diff cannot erase. Whenever the view identity changes
-                // (tab, overlay, selected match, list scroll, flag toggle,
-                // resize) clear first so stale images don't bleed across tabs or
-                // smear as a list scrolls. Only needed when real images are
-                // active; swatch/text views diff cleanly, so they never flash.
+                // Live-card flag images drawn through real terminal graphics
+                // protocols cannot be erased by ratatui's cell diff. Whenever
+                // the view identity changes, clear if either the previous or the
+                // next frame can contain those images; halfblocks/text diff
+                // cleanly, so forced halfblocks mode does not flash.
                 let sig = self.view_signature(terminal.size()?);
+                let images_active = self.images_active();
                 if sig != last_sig {
-                    if self.images_active() {
+                    if last_images_active || images_active {
                         terminal.clear()?;
                     }
                     last_sig = sig;
                 }
+                last_images_active = images_active;
                 terminal.draw(|frame| ui::render(&self, frame))?;
             }
         }
@@ -282,20 +280,21 @@ impl App {
             team: self.team.is_some(),
             help: self.show_help,
             live_selected: self.ui_state.live_selected,
-            matches_selected: self.ui_state.matches_selected,
-            standings_group: self.ui_state.standings_group,
-            team_selected: self.ui_state.team_selected,
             show_flags: self.config.ui.show_flags,
             width: size.width,
             height: size.height,
         }
     }
 
-    /// Whether real flag images (not half-block swatches) are being drawn: flags
-    /// are enabled and the terminal has a graphics protocol. Only then does a
-    /// view change need a full clear to erase stale images.
+    /// Whether real flag images are available to draw. Only real terminal
+    /// graphics protocols need a full clear on view changes; halfblocks are
+    /// normal cells and diff cleanly.
     fn images_active(&self) -> bool {
-        self.config.ui.show_flags && self.flags.is_some()
+        self.config.ui.show_flags
+            && self
+                .flags
+                .as_ref()
+                .is_some_and(|flags| flags.borrow().uses_graphics_protocol())
     }
 
     // --- accessors used by the UI -----------------------------------------

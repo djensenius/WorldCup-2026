@@ -23,11 +23,11 @@ impl Default for Cache {
 }
 
 impl Cache {
-    /// Locate the cache directory (`…/wc26/data`). If it cannot be determined,
+    /// Locate the cache directory (`…/worldcup26/data`). If it cannot be determined,
     /// the cache is silently disabled.
     #[must_use]
     pub fn new() -> Self {
-        let dir = directories::ProjectDirs::from("dev", "djensenius", "wc26")
+        let dir = directories::ProjectDirs::from("dev", "djensenius", "worldcup26")
             .map(|dirs| dirs.cache_dir().join("data"));
         Self { dir }
     }

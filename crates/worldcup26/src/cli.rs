@@ -4,9 +4,9 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-/// `wc26` — a terminal UI for the FIFA World Cup 2026.
+/// WorldCup26 — a terminal UI for the FIFA World Cup 2026.
 #[derive(Debug, Parser)]
-#[command(name = "wc26", version, about)]
+#[command(name = "worldcup26", version, about)]
 pub struct Cli {
     /// Path to the config file (defaults to the platform config directory).
     #[arg(short, long, value_name = "FILE")]
