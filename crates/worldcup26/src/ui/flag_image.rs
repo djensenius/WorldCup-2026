@@ -25,11 +25,9 @@ use resvg::usvg;
 ///
 /// Detection is environment-based only — we never issue an interactive terminal
 /// query, which can desync stdin and break key handling inside multiplexers and
-/// some PTYs. [`Picker::from_fontsize`] does the heavy lifting: it detects tmux
-/// (enabling tmux passthrough so image escapes reach the outer terminal) and
-/// guesses the outer terminal's protocol from environment variables (e.g.
-/// WezTerm → iTerm2, Kitty → Kitty). We add a few terminals it misses (Ghostty,
-/// Kitty-by-TERM). Set `WORLDCUP26_GRAPHICS` to `kitty`/`iterm2`/`sixel`/`halfblocks`
+/// some PTYs. [`Picker::halfblocks`] detects tmux so escapes can be wrapped in
+/// tmux passthrough, then we select a graphics protocol from environment
+/// variables. Set `WORLDCUP26_GRAPHICS` to `kitty`/`iterm2`/`sixel`/`halfblocks`
 /// to force a protocol, or `off` to disable flags entirely.
 #[must_use]
 pub fn make_picker() -> Option<Picker> {
@@ -39,10 +37,9 @@ pub fn make_picker() -> Option<Picker> {
     if forced.as_deref() == Some("off") {
         return None;
     }
-    // Builds a picker, detecting tmux + outer protocol from the environment and
-    // marking `is_tmux` so escapes are wrapped in tmux passthrough. No stdin.
-    #[allow(deprecated)]
-    let mut picker = Picker::from_fontsize(guess_font_size());
+    // Detects tmux and marks `is_tmux` so escapes are wrapped in tmux
+    // passthrough. No stdin.
+    let mut picker = Picker::halfblocks();
     let protocol = forced
         .as_deref()
         .and_then(parse_protocol)
@@ -84,12 +81,6 @@ fn guess_extra_protocol() -> Option<ProtocolType> {
         return Some(ProtocolType::Kitty);
     }
     None
-}
-
-/// A reasonable default cell size in pixels when we can't query the terminal.
-/// Most monospace cells are about 1:2 (width:height).
-fn guess_font_size() -> (u16, u16) {
-    (8, 16)
 }
 
 /// A cache of rendered flag protocols, keyed by team code and cell size.
