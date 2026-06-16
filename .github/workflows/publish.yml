@@ -157,6 +157,8 @@ jobs:
       - uses: Swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc # v2.9.1
         with:
           key: publish-crates
+      - name: Refresh release lockfile
+        run: cargo generate-lockfile
       - name: Skip crates.io publish for draft releases
         if: ${{ needs.resolve.outputs.draft == 'true' }}
         run: echo "Draft release requested; skipping crates.io publish."
