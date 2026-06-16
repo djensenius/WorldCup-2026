@@ -72,12 +72,12 @@ jobs:
         with:
           tool: cross,cargo-deb
       - name: Cross-build release
-        run: cross build -p wc-tui --release --target ${{ matrix.target }}
+        run: cross build -p worldcup26 --release --target ${{ matrix.target }}
       - name: Build .deb
         # --no-strip: the release profile already strips via the Rust linker;
         # running cargo-deb's host `strip` on a cross-compiled binary fails
         # because the host strip is x86_64.
-        run: cargo deb -p wc-tui --no-build --no-strip --target ${{ matrix.target }}
+        run: cargo deb -p worldcup26 --no-build --no-strip --target ${{ matrix.target }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: deb-${{ matrix.target }}
@@ -100,18 +100,18 @@ jobs:
           toolchain: 1.95.0
           targets: ${{ matrix.target }}
       - uses: Swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc # v2.9.1
-      - run: cargo build -p wc-tui --release --target ${{ matrix.target }}
+      - run: cargo build -p worldcup26 --release --target ${{ matrix.target }}
       - name: Pack tarball
         run: |
           set -eu
-          mkdir -p "dist/wc26-${{ matrix.target }}/completions"
-          cp "target/${{ matrix.target }}/release/wc26" "dist/wc26-${{ matrix.target }}/"
-          out_dir="$(find "target/${{ matrix.target }}/release/build" -path '*/out/wc26.1' -print -quit | xargs dirname)"
-          cp "$out_dir/wc26.1" "dist/wc26-${{ matrix.target }}/"
-          cp "$out_dir/wc26" "dist/wc26-${{ matrix.target }}/completions/"
-          cp "$out_dir/_wc26" "dist/wc26-${{ matrix.target }}/completions/"
-          cp "$out_dir/wc26.fish" "dist/wc26-${{ matrix.target }}/completions/"
-          tar -C dist -czf "dist/wc26-${{ matrix.target }}.tar.gz" "wc26-${{ matrix.target }}"
+          mkdir -p "dist/worldcup26-${{ matrix.target }}/completions"
+          cp "target/${{ matrix.target }}/release/worldcup26" "dist/worldcup26-${{ matrix.target }}/"
+          out_dir="$(find "target/${{ matrix.target }}/release/build" -path '*/out/worldcup26.1' -print -quit | xargs dirname)"
+          cp "$out_dir/worldcup26.1" "dist/worldcup26-${{ matrix.target }}/"
+          cp "$out_dir/worldcup26" "dist/worldcup26-${{ matrix.target }}/completions/"
+          cp "$out_dir/_worldcup26" "dist/worldcup26-${{ matrix.target }}/completions/"
+          cp "$out_dir/worldcup26.fish" "dist/worldcup26-${{ matrix.target }}/completions/"
+          tar -C dist -czf "dist/worldcup26-${{ matrix.target }}.tar.gz" "worldcup26-${{ matrix.target }}"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: tarball-${{ matrix.target }}
@@ -128,18 +128,18 @@ jobs:
           toolchain: 1.95.0
           targets: x86_64-pc-windows-msvc
       - uses: Swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc # v2.9.1
-      - run: cargo build -p wc-tui --release --target x86_64-pc-windows-msvc
+      - run: cargo build -p worldcup26 --release --target x86_64-pc-windows-msvc
       - name: Pack zip
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force -Path dist/wc26-x86_64-pc-windows-msvc/completions | Out-Null
-          Copy-Item target/x86_64-pc-windows-msvc/release/wc26.exe dist/wc26-x86_64-pc-windows-msvc/
-          $outDir = Get-ChildItem target/x86_64-pc-windows-msvc/release/build -Recurse -Filter wc26.1 | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
-          Copy-Item "$outDir/wc26.1" dist/wc26-x86_64-pc-windows-msvc/
-          Copy-Item "$outDir/wc26" dist/wc26-x86_64-pc-windows-msvc/completions/
-          Copy-Item "$outDir/_wc26" dist/wc26-x86_64-pc-windows-msvc/completions/
-          Copy-Item "$outDir/wc26.fish" dist/wc26-x86_64-pc-windows-msvc/completions/
-          Compress-Archive -Path dist/wc26-x86_64-pc-windows-msvc -DestinationPath dist/wc26-x86_64-pc-windows-msvc.zip
+          New-Item -ItemType Directory -Force -Path dist/worldcup26-x86_64-pc-windows-msvc/completions | Out-Null
+          Copy-Item target/x86_64-pc-windows-msvc/release/worldcup26.exe dist/worldcup26-x86_64-pc-windows-msvc/
+          $outDir = Get-ChildItem target/x86_64-pc-windows-msvc/release/build -Recurse -Filter worldcup26.1 | Select-Object -First 1 | ForEach-Object { $_.DirectoryName }
+          Copy-Item "$outDir/worldcup26.1" dist/worldcup26-x86_64-pc-windows-msvc/
+          Copy-Item "$outDir/worldcup26" dist/worldcup26-x86_64-pc-windows-msvc/completions/
+          Copy-Item "$outDir/_worldcup26" dist/worldcup26-x86_64-pc-windows-msvc/completions/
+          Copy-Item "$outDir/worldcup26.fish" dist/worldcup26-x86_64-pc-windows-msvc/completions/
+          Compress-Archive -Path dist/worldcup26-x86_64-pc-windows-msvc -DestinationPath dist/worldcup26-x86_64-pc-windows-msvc.zip
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: zip-x86_64-pc-windows-msvc
@@ -221,7 +221,7 @@ jobs:
           done
           echo "::error::wc-data $version was not visible in the crates.io index in time."
           exit 1
-      - name: Publish wc-tui
+      - name: Publish worldcup26
         if: ${{ needs.resolve.outputs.draft != 'true' }}
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
@@ -240,11 +240,11 @@ jobs:
           }
 
           version="${VERSION#v}"
-          if crate_version_is_searchable "wc-tui" "$version"; then
-            echo "wc-tui $version is already published; skipping."
+          if crate_version_is_searchable "worldcup26" "$version"; then
+            echo "worldcup26 $version is already published; skipping."
             exit 0
           fi
-          cargo publish -p wc-tui --locked
+          cargo publish -p worldcup26 --locked
 
   release:
     needs: [resolve, build-deb, build-tarball, build-zip, publish-crates]
@@ -315,6 +315,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "publish wc26 APT repo for ${TAG}"
+          git commit -m "publish worldcup26 APT repo for ${TAG}"
           git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           git push --force origin gh-pages

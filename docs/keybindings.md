@@ -1,6 +1,6 @@
 # Keybindings
 
-`wc26` is keyboard-first; the mouse is also supported. Keys are grouped into
+WorldCup26 is keyboard-first; the mouse is also supported. Keys are grouped into
 global bindings (active everywhere) and per-screen bindings.
 
 ## Global
@@ -44,9 +44,9 @@ terminal query, which can break key input inside multiplexers.
 passthrough to the outer terminal, and `allow-passthrough` is enabled
 automatically. This needs tmux 3.3+ and a graphics-capable outer terminal. Note
 that WezTerm uses the **iTerm2** protocol (auto-detected) — forcing
-`WC26_GRAPHICS=kitty` there will not render, so prefer auto-detection.
+`WORLDCUP26_GRAPHICS=kitty` there will not render, so prefer auto-detection.
 
-Set `WC26_GRAPHICS` to `kitty`, `iterm2`, `sixel`, `halfblocks`, or `off` only
+Set `WORLDCUP26_GRAPHICS` to `kitty`, `iterm2`, `sixel`, `halfblocks`, or `off` only
 to override detection.
 
 ## Matches

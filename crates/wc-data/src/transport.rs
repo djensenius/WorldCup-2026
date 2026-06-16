@@ -14,7 +14,7 @@ use crate::error::{DataError, Result};
 const TIMEOUT: Duration = Duration::from_secs(15);
 
 /// User-Agent sent with every request.
-const USER_AGENT: &str = concat!("wc26/", env!("CARGO_PKG_VERSION"));
+const USER_AGENT: &str = concat!("worldcup26/", env!("CARGO_PKG_VERSION"));
 
 /// A cheap-to-clone HTTP client shared across backends.
 #[derive(Debug, Clone)]

@@ -67,7 +67,7 @@ fn render_tabs(app: &App, frame: &mut Frame, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::new().fg(theme.dim))
-        .title(format!(" {}wc26 ", icons.brand()))
+        .title(format!(" {}WorldCup26 ", icons.brand()))
         .title_style(Style::new().fg(theme.accent).add_modifier(Modifier::BOLD));
     record_tab_hitboxes(app, block.inner(area), &titles);
     let tabs = Tabs::new(titles)

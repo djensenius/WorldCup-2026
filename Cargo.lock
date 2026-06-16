@@ -2624,32 +2624,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wc-tui"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "clap",
- "clap_complete",
- "clap_mangen",
- "crossterm",
- "directories",
- "futures",
- "image",
- "ratatui",
- "ratatui-image",
- "resvg",
- "serde",
- "serde_json",
- "time",
- "tokio",
- "toml",
- "tracing",
- "tracing-appender",
- "tracing-subscriber",
- "wc-data",
-]
-
-[[package]]
 name = "web-sys"
 version = "0.3.100"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3044,6 +3018,32 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "worldcup26"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "clap_complete",
+ "clap_mangen",
+ "crossterm",
+ "directories",
+ "futures",
+ "image",
+ "ratatui",
+ "ratatui-image",
+ "resvg",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-appender",
+ "tracing-subscriber",
+ "wc-data",
+]
 
 [[package]]
 name = "writeable"

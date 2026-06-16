@@ -8,7 +8,7 @@ fi
 
 deb_dir="$1"
 out_dir="$2"
-pool_dir="$out_dir/pool/main/w/wc26"
+pool_dir="$out_dir/pool/main/w/worldcup26"
 
 mkdir -p "$pool_dir"
 find "$deb_dir" -type f -name '*.deb' -exec cp {} "$pool_dir/" \;
@@ -34,5 +34,5 @@ Suite: stable
 Codename: stable
 Architectures: amd64 arm64 armhf
 Components: main
-Description: wc26 release packages
+Description: WorldCup26 release packages
 RELEASE

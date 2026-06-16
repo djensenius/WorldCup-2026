@@ -164,7 +164,7 @@ impl App {
         let theme = Theme::from_name(theme::NAMES[theme_index]);
         let icons = Icons::new(config.ui.nerd_fonts);
         let mut toasts = Toasts::default();
-        toasts.info("Welcome to wc26. Press ? for help, q to quit.");
+        toasts.info("Welcome to WorldCup26. Press ? for help, q to quit.");
 
         let cache = Cache::new();
         let mut scoreboard = Poller::new();

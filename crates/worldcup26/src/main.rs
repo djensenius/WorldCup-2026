@@ -1,4 +1,4 @@
-//! `wc26` — a terminal UI for the FIFA World Cup 2026.
+//! WorldCup26 — a terminal UI for the FIFA World Cup 2026.
 //!
 //! Module layout:
 //! - [`cli`]: command-line argument parsing.

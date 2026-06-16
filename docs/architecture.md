@@ -1,12 +1,12 @@
 # Architecture
 
-`wc26` is a two-crate Cargo workspace. The data layer is provider-agnostic and
+WorldCup26 is a two-crate Cargo workspace. The data layer is provider-agnostic and
 has no terminal dependencies; the UI layer renders that normalized data and
 owns all polling, navigation, and rendering.
 
 ```text
 +-------------------------------------------------------------+
-|  wc-tui (binary: wc26)                                      |
+|  WorldCup26 (package/binary: worldcup26)                    |
 |                                                             |
 |  App  ──  EventLoop (crossterm EventStream + tick)          |
 |   │         │                                               |
@@ -39,7 +39,7 @@ owns all polling, navigation, and rendering.
   provider backends. It depends on `reqwest`, `serde`, and `time`, but never on
   `ratatui` or `crossterm`. This keeps the data layer independently testable
   and reusable.
-- **`wc-tui`** — the terminal application (binary `wc26`). It owns the `App`
+- **`worldcup26`** — the terminal application (binary `worldcup26`). It owns the `App`
   state machine, the async event loop, configuration, the offline cache, and
   all rendering.
 
@@ -81,7 +81,7 @@ model, so the UI is identical regardless of the selected source. See
 ## Offline cache
 
 The last good normalized payload for each domain is written as JSON under the
-platform cache directory (`ProjectDirs` for `dev.djensenius.wc26`). Reads and
+platform cache directory (`ProjectDirs` for `dev.djensenius.worldcup26`). Reads and
 writes are best-effort: a missing or unreadable cache never blocks startup. The
 status bar shows a cached indicator until the first successful live fetch of the
 session completes.

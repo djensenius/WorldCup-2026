@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/wc-data", "crates/wc-tui"]
+members = ["crates/wc-data", "crates/worldcup26"]
 
 [workspace.package]
 version = "0.2.0" # x-release-please-version

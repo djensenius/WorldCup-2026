@@ -8,9 +8,9 @@
 * scaffold World Cup 2026 TUI workspace ([4593a80](https://github.com/djensenius/WorldCup-2026/commit/4593a80ce8d31def56bec04d0e556ee5145a2c8c))
 * team view, favourites, navigation, live activity card, and national flags ([8ac6b2a](https://github.com/djensenius/WorldCup-2026/commit/8ac6b2a77d878f3e2482cfcbe886f018aafe3eb0))
 * **wc-data:** implement ESPN, API-Football, and football-data backends ([396789e](https://github.com/djensenius/WorldCup-2026/commit/396789e462f99f6e85f030b2390272fad32885b6))
-* **wc-tui:** add offline cache and mouse support ([330f793](https://github.com/djensenius/WorldCup-2026/commit/330f7933fb48607dd45da30d24a14981e3b5a928))
-* **wc-tui:** implement matches, live, and match-detail screens ([ff3b908](https://github.com/djensenius/WorldCup-2026/commit/ff3b908b3227b7adc81e295c02400024c2b07dc4))
-* **wc-tui:** implement standings and bracket screens ([4bbe216](https://github.com/djensenius/WorldCup-2026/commit/4bbe21693399b1eca72134cff5f81995c560e36b))
+* **worldcup26:** add offline cache and mouse support ([330f793](https://github.com/djensenius/WorldCup-2026/commit/330f7933fb48607dd45da30d24a14981e3b5a928))
+* **worldcup26:** implement matches, live, and match-detail screens ([ff3b908](https://github.com/djensenius/WorldCup-2026/commit/ff3b908b3227b7adc81e295c02400024c2b07dc4))
+* **worldcup26:** implement standings and bracket screens ([4bbe216](https://github.com/djensenius/WorldCup-2026/commit/4bbe21693399b1eca72134cff5f81995c560e36b))
 
 
 ### Bug Fixes

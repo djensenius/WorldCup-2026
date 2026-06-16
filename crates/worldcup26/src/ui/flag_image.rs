@@ -7,7 +7,7 @@
 //! graphics-protocol images aren't erased by ratatui's cell diff, the event loop
 //! clears the terminal when the Live card changes or is left (see `App::run`).
 //! The active protocol is detected once at startup (overridable with the
-//! `WC26_GRAPHICS` environment variable).
+//! `WORLDCUP26_GRAPHICS` environment variable).
 
 use std::collections::HashMap;
 
@@ -28,11 +28,11 @@ use resvg::usvg;
 /// (enabling tmux passthrough so image escapes reach the outer terminal) and
 /// guesses the outer terminal's protocol from environment variables (e.g.
 /// WezTerm → iTerm2, Kitty → Kitty). We add a few terminals it misses (Ghostty,
-/// Kitty-by-TERM). Set `WC26_GRAPHICS` to `kitty`/`iterm2`/`sixel`/`halfblocks`
+/// Kitty-by-TERM). Set `WORLDCUP26_GRAPHICS` to `kitty`/`iterm2`/`sixel`/`halfblocks`
 /// to force a protocol, or `off` to disable flags entirely.
 #[must_use]
 pub fn make_picker() -> Option<Picker> {
-    let forced = std::env::var("WC26_GRAPHICS")
+    let forced = std::env::var("WORLDCUP26_GRAPHICS")
         .ok()
         .map(|value| value.to_ascii_lowercase());
     if forced.as_deref() == Some("off") {

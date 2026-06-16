@@ -1,4 +1,4 @@
-# wc26 — World Cup 2026 TUI
+# WorldCup26 — World Cup 2026 TUI
 
 A fast, keyboard-driven terminal UI for the **FIFA World Cup 2026**: schedule,
 group standings, the knockout bracket, and a **live scoreboard** — built with
@@ -32,7 +32,7 @@ Rust and [ratatui](https://ratatui.rs).
 
 ## Installation
 
-The crates.io package is named `wc-tui`; it installs the `wc26` command.
+The crates.io package is named `worldcup26`; it installs the `worldcup26` command.
 
 ### Requirements
 
@@ -49,34 +49,34 @@ The crates.io package is named `wc-tui`; it installs the `wc26` command.
 Install the latest released version from crates.io:
 
 ```sh
-cargo install wc-tui --locked
-wc26
+cargo install worldcup26 --locked
+worldcup26
 ```
 
-If `wc26` is not found after installation, add Cargo's bin directory to your
+If `worldcup26` is not found after installation, add Cargo's bin directory to your
 `PATH` (`~/.cargo/bin` on macOS/Linux, `%USERPROFILE%\.cargo\bin` on Windows).
 
-`wc26` uses ESPN by default and does not require an API key. Optional providers
-can be enabled with `WC26_API_FOOTBALL_KEY` or `WC26_FOOTBALL_DATA_KEY`; see
+WorldCup26 uses ESPN by default and does not require an API key. Optional providers
+can be enabled with `WORLDCUP26_API_FOOTBALL_KEY` or `WORLDCUP26_FOOTBALL_DATA_KEY`; see
 [Data providers](#data-providers).
 
 ### Run from source
 
 ```sh
-cargo run -p wc-tui --bin wc26
+cargo run -p worldcup26 --bin worldcup26
 ```
 
 Requires the toolchain pinned in `rust-toolchain.toml`.
 
 ## Data providers
 
-`wc26` normalizes several upstream APIs behind one interface:
+WorldCup26 normalizes several upstream APIs behind one interface:
 
 | Provider           | API key | Notes                                          |
 | ------------------ | ------- | ---------------------------------------------- |
 | **ESPN** (default) | No      | Free, live data; the default.                  |
-| API-Football       | Yes     | Richer stats; set `WC26_API_FOOTBALL_KEY`.     |
-| football-data.org  | Yes     | Limited live detail; set `WC26_FOOTBALL_DATA_KEY`. |
+| API-Football       | Yes     | Richer stats; set `WORLDCUP26_API_FOOTBALL_KEY`.     |
+| football-data.org  | Yes     | Limited live detail; set `WORLDCUP26_FOOTBALL_DATA_KEY`. |
 
 Select a provider with `--provider <espn|api-football|football-data>` or in the
 config file.
@@ -104,7 +104,7 @@ The full list, including per-screen and mouse bindings, is in
 ## Workspace layout
 
 - `crates/wc-data` — normalized domain model and provider backends.
-- `crates/wc-tui` — the terminal UI (binary `wc26`).
+- `crates/worldcup26` — the terminal UI (binary `worldcup26`).
 
 ## Documentation
 
@@ -124,7 +124,7 @@ For non-draft releases, CI publishes both crates to crates.io in dependency
 order:
 
 1. `wc-data`
-2. `wc-tui` (installs the `wc26` binary)
+2. `worldcup26` (installs the `worldcup26` binary)
 
 Repository setup requires a crates.io API token stored as the
 `CARGO_REGISTRY_TOKEN` GitHub Actions secret. The same publish workflow also
@@ -136,4 +136,4 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 Bundled national-flag artwork is from
 [flag-icons](https://github.com/lipis/flag-icons) (MIT); see
-[crates/wc-tui/assets/flags/ATTRIBUTION.md](crates/wc-tui/assets/flags/ATTRIBUTION.md).
+[crates/worldcup26/assets/flags/ATTRIBUTION.md](crates/worldcup26/assets/flags/ATTRIBUTION.md).
