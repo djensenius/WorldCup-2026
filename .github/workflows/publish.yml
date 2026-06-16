@@ -177,8 +177,19 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
+          crate_version_is_searchable() {
+            crate="$1"
+            version="$2"
+            search_output="$(cargo search "$crate" --limit 100)" || {
+              echo "::error::Unable to search crates.io for $crate."
+              exit 1
+            }
+            printf '%s\n' "$search_output" | awk -v crate="$crate" -v version="$version" \
+              '$1 == crate && $2 == "=" && $3 == "\"" version "\"" { found = 1 } END { exit found ? 0 : 1 }'
+          }
+
           version="${VERSION#v}"
-          if cargo search wc-data --limit 1 | grep -q "^wc-data = \"$version\""; then
+          if crate_version_is_searchable "wc-data" "$version"; then
             echo "wc-data $version is already published; skipping."
             exit 0
           fi
@@ -189,9 +200,20 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
+          crate_version_is_searchable() {
+            crate="$1"
+            version="$2"
+            search_output="$(cargo search "$crate" --limit 100)" || {
+              echo "::error::Unable to search crates.io for $crate."
+              exit 1
+            }
+            printf '%s\n' "$search_output" | awk -v crate="$crate" -v version="$version" \
+              '$1 == crate && $2 == "=" && $3 == "\"" version "\"" { found = 1 } END { exit found ? 0 : 1 }'
+          }
+
           version="${VERSION#v}"
           for attempt in $(seq 1 30); do
-            if cargo search wc-data --limit 1 | grep -q "^wc-data = \"$version\""; then
+            if crate_version_is_searchable "wc-data" "$version"; then
               exit 0
             fi
             echo "wc-data $version is not indexed yet (attempt $attempt/30); waiting..."
@@ -206,8 +228,19 @@ jobs:
           VERSION: ${{ needs.resolve.outputs.tag }}
         run: |
           set -euo pipefail
+          crate_version_is_searchable() {
+            crate="$1"
+            version="$2"
+            search_output="$(cargo search "$crate" --limit 100)" || {
+              echo "::error::Unable to search crates.io for $crate."
+              exit 1
+            }
+            printf '%s\n' "$search_output" | awk -v crate="$crate" -v version="$version" \
+              '$1 == crate && $2 == "=" && $3 == "\"" version "\"" { found = 1 } END { exit found ? 0 : 1 }'
+          }
+
           version="${VERSION#v}"
-          if cargo search wc-tui --limit 1 | grep -q "^wc-tui = \"$version\""; then
+          if crate_version_is_searchable "wc-tui" "$version"; then
             echo "wc-tui $version is already published; skipping."
             exit 0
           fi
