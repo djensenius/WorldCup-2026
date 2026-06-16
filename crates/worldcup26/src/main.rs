@@ -21,14 +21,14 @@ mod timefmt;
 mod tui;
 mod ui;
 
-use anyhow::Result;
+use anyhow::{Result, bail};
 use clap::Parser;
 use time::UtcOffset;
 use wc_data::{Http, Provider};
 
 use crate::app::App;
 use crate::cli::Cli;
-use crate::config::Config;
+use crate::config::{Config, TimezonePref};
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
@@ -50,10 +50,29 @@ async fn run(cli: Cli, local_offset: UtcOffset) -> Result<()> {
         None => Config::default_path()?,
     };
 
-    let mut config = Config::load_from(&config_path)?;
+    let persisted_config = Config::load_from(&config_path)?;
+    let mut config = persisted_config.clone();
     config.merge_env();
     if let Some(provider) = cli.provider.as_deref() {
         config.provider.kind = provider.to_owned();
+    }
+    if let Some(theme) = cli.theme.as_deref() {
+        config.ui.theme = theme.to_owned();
+    }
+    if let Some(timezone) = cli.timezone.as_deref() {
+        config.ui.timezone = parse_timezone(timezone)?;
+    }
+    if cli.nerd_fonts {
+        config.ui.nerd_fonts = true;
+    }
+    if cli.no_nerd_fonts {
+        config.ui.nerd_fonts = false;
+    }
+    if cli.flags {
+        config.ui.show_flags = true;
+    }
+    if cli.no_flags {
+        config.ui.show_flags = false;
     }
     if cli.no_color {
         "high-contrast".clone_into(&mut config.ui.theme);
@@ -77,10 +96,12 @@ async fn run(cli: Cli, local_offset: UtcOffset) -> Result<()> {
 
     let mut app = App::new(
         config,
+        persisted_config,
         config_path,
         provider,
         local_offset,
-        crate::ui::flag_image::make_picker().map(crate::ui::flag_image::FlagStore::new),
+        crate::ui::flag_image::make_picker(cli.graphics.as_deref())
+            .map(crate::ui::flag_image::FlagStore::new),
     );
     if let Some(warning) = startup_warning {
         app.warn(warning);
@@ -90,4 +111,21 @@ async fn run(cli: Cli, local_offset: UtcOffset) -> Result<()> {
     let result = app.run(&mut terminal).await;
     tui::restore()?;
     result
+}
+
+fn parse_timezone(value: &str) -> Result<TimezonePref> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "local" => Ok(TimezonePref::Local),
+        "utc" => Ok(TimezonePref::Utc),
+        _ => {
+            let hours = value.parse::<i8>().map_err(|_| {
+                anyhow::anyhow!("timezone must be `local`, `utc`, or an hour offset like `-4`")
+            })?;
+            if (-23..=23).contains(&hours) {
+                Ok(TimezonePref::FixedOffset(hours))
+            } else {
+                bail!("timezone hour offset must be between -23 and 23");
+            }
+        }
+    }
 }

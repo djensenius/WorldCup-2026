@@ -13,6 +13,7 @@
 //! environment variable).
 
 use std::collections::HashMap;
+use std::process::Command;
 
 use image::{DynamicImage, RgbaImage};
 use ratatui::layout::Rect;
@@ -30,12 +31,15 @@ use resvg::usvg;
 /// query, which can desync stdin and break key handling inside multiplexers and
 /// some PTYs. [`Picker::halfblocks`] detects tmux so escapes can be wrapped in
 /// tmux passthrough, then we select a graphics protocol from environment
-/// variables. Set `WORLDCUP26_GRAPHICS` to `kitty`/`iterm2`/`sixel`/`halfblocks`
-/// to force a protocol, or `off` to disable flags entirely.
+/// variables. `override_mode`, or `WORLDCUP26_GRAPHICS` when no override is
+/// provided, can be set to `auto`, `kitty`, `iterm2`, `sixel`, `halfblocks`, or
+/// `off`.
 #[must_use]
-pub fn make_picker() -> Option<Picker> {
-    let forced = std::env::var("WORLDCUP26_GRAPHICS")
-        .ok()
+pub fn make_picker(override_mode: Option<&str>) -> Option<Picker> {
+    let forced = override_mode
+        .map(str::to_owned)
+        .or_else(|| std::env::var("WORLDCUP26_GRAPHICS").ok())
+        .filter(|value| !value.eq_ignore_ascii_case("auto"))
         .map(|value| value.to_ascii_lowercase());
     if forced.as_deref() == Some("off") {
         return None;
@@ -68,15 +72,22 @@ fn non_halfblocks(protocol: ProtocolType) -> Option<ProtocolType> {
     (protocol != ProtocolType::Halfblocks).then_some(protocol)
 }
 
-/// Identify a few graphics terminals that ratatui-image's env heuristics miss
-/// (notably Ghostty and Kitty-by-`TERM`). Only consulted outside tmux, where
-/// `TERM`/`TERM_PROGRAM` are not masked by the multiplexer.
+/// Identify a few graphics terminals that ratatui-image's env heuristics miss,
+/// including the outer terminal environment when running inside tmux.
 fn guess_extra_protocol() -> Option<ProtocolType> {
-    let env = |key: &str| std::env::var(key).ok();
+    guess_from_env(|key| std::env::var(key)).or_else(guess_from_tmux)
+}
+
+fn guess_from_env(
+    mut env: impl FnMut(&str) -> Result<String, std::env::VarError>,
+) -> Option<ProtocolType> {
     let term = env("TERM").unwrap_or_default().to_ascii_lowercase();
     let program = env("TERM_PROGRAM").unwrap_or_default().to_ascii_lowercase();
-    if env("KITTY_WINDOW_ID").is_some_and(|v| !v.is_empty())
-        || env("KONSOLE_VERSION").is_some()
+    if env("WEZTERM_EXECUTABLE").is_ok() || env("WEZTERM_PANE").is_ok() || program == "wezterm" {
+        return Some(ProtocolType::Iterm2);
+    }
+    if env("KITTY_WINDOW_ID").is_ok()
+        || env("KONSOLE_VERSION").is_ok()
         || term.contains("kitty")
         || term.contains("ghostty")
         || program == "ghostty"
@@ -84,6 +95,55 @@ fn guess_extra_protocol() -> Option<ProtocolType> {
         return Some(ProtocolType::Kitty);
     }
     None
+}
+
+fn guess_from_tmux() -> Option<ProtocolType> {
+    std::env::var("TMUX").ok()?;
+    let tmux_env = tmux_show_environment();
+    guess_from_env(|key| {
+        tmux_env
+            .get(key)
+            .cloned()
+            .ok_or(std::env::VarError::NotPresent)
+    })
+    .or_else(|| tmux_has_sixel().then_some(ProtocolType::Sixel))
+}
+
+fn tmux_show_environment() -> HashMap<String, String> {
+    let Ok(output) = Command::new("tmux")
+        .args(["show-environment", "-g"])
+        .output()
+    else {
+        return HashMap::new();
+    };
+    if !output.status.success() {
+        return HashMap::new();
+    }
+    parse_tmux_environment(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_tmux_environment(output: &str) -> HashMap<String, String> {
+    output
+        .lines()
+        .filter_map(|line| {
+            let (key, value) = line.split_once('=')?;
+            (!key.starts_with('-')).then(|| (key.to_owned(), value.to_owned()))
+        })
+        .collect()
+}
+
+fn tmux_has_sixel() -> bool {
+    let Ok(output) = Command::new("tmux")
+        .args(["display-message", "-p", "#{client_termfeatures}"])
+        .output()
+    else {
+        return false;
+    };
+    output.status.success()
+        && String::from_utf8_lossy(&output.stdout)
+            .to_ascii_lowercase()
+            .split(',')
+            .any(|feature| feature.trim() == "sixel")
 }
 
 /// A cache of rendered flag protocols, keyed by team code and cell size.
@@ -211,7 +271,9 @@ fn svg(code: &str) -> Option<&'static str> {
 
 #[cfg(test)]
 mod tests {
-    use super::{has_flag, rasterize, svg};
+    use ratatui_image::picker::ProtocolType;
+
+    use super::{guess_from_env, has_flag, parse_tmux_environment, rasterize, svg};
 
     const TEAMS: [&str; 48] = [
         "ALG", "ARG", "AUS", "AUT", "BEL", "BIH", "BRA", "CAN", "CIV", "COD", "COL", "CPV", "CRO",
@@ -241,5 +303,36 @@ mod tests {
             let img = rasterize(s, 96, 64);
             assert!(img.is_some(), "failed to rasterize {code}");
         }
+    }
+
+    #[test]
+    fn tmux_environment_parser_ignores_removed_values() {
+        let env = parse_tmux_environment(
+            "TERM_PROGRAM=WezTerm\n-WEZTERM_PANE\nWEZTERM_EXECUTABLE=/Applications/WezTerm.app/Contents/MacOS/wezterm-gui\n",
+        );
+        assert_eq!(env.get("TERM_PROGRAM").map(String::as_str), Some("WezTerm"));
+        assert_eq!(env.get("WEZTERM_PANE"), None);
+        assert_eq!(
+            env.get("WEZTERM_EXECUTABLE").map(String::as_str),
+            Some("/Applications/WezTerm.app/Contents/MacOS/wezterm-gui")
+        );
+    }
+
+    #[test]
+    fn wezterm_uses_iterm2_protocol() {
+        let protocol = guess_from_env(|key| match key {
+            "TERM_PROGRAM" => Ok("WezTerm".to_owned()),
+            _ => Err(std::env::VarError::NotPresent),
+        });
+        assert_eq!(protocol, Some(ProtocolType::Iterm2));
+    }
+
+    #[test]
+    fn kitty_hints_use_kitty_protocol() {
+        let protocol = guess_from_env(|key| match key {
+            "KITTY_WINDOW_ID" => Ok("1".to_owned()),
+            _ => Err(std::env::VarError::NotPresent),
+        });
+        assert_eq!(protocol, Some(ProtocolType::Kitty));
     }
 }
