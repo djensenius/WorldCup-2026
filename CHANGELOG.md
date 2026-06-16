@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1](https://github.com/djensenius/WorldCup-2026/compare/v0.2.0...v0.2.1) (2026-06-16)
+
+
+### Bug Fixes
+
+* prepare public crate release ([8e8e48f](https://github.com/djensenius/WorldCup-2026/commit/8e8e48fb9850d2782b4bbc9ed66b1befe28c2112))
+* remove unmaintained paste dependency ([#7](https://github.com/djensenius/WorldCup-2026/issues/7)) ([846de34](https://github.com/djensenius/WorldCup-2026/commit/846de34602f5a4582ee4234e4d42de09bdea02e7))
+* update ratatui to avoid vulnerable lru ([#6](https://github.com/djensenius/WorldCup-2026/issues/6)) ([9b26b30](https://github.com/djensenius/WorldCup-2026/commit/9b26b30c0649da028745836c776058626e4bb2a8))
+
 ## [0.2.0](https://github.com/djensenius/WorldCup-2026/compare/v0.1.0...v0.2.0) (2026-06-13)
 
 
