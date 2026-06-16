@@ -137,7 +137,9 @@ mod tests {
 
     #[test]
     fn parse_timezone_trims_fixed_offsets() {
-        let timezone = parse_timezone(" -4 ").expect("timezone parses");
-        assert!(matches!(timezone, TimezonePref::FixedOffset(-4)));
+        assert!(matches!(
+            parse_timezone(" -4 "),
+            Ok(TimezonePref::FixedOffset(-4))
+        ));
     }
 }
