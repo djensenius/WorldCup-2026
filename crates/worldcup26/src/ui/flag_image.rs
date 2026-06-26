@@ -224,7 +224,8 @@ fn tmux_has_sixel() -> bool {
             .any(|feature| feature.trim() == "sixel")
 }
 
-/// A cache of rendered flag protocols, keyed by team code and cell size.
+/// A cache of composited Live-card images, keyed by a fingerprint of each
+/// card's teams, score, and cell layout.
 pub struct FlagStore {
     picker: Picker,
     /// Composited Live-card images (home flag + score + away flag), keyed by

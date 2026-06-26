@@ -414,8 +414,15 @@ fn names_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
 fn latest_event(events: &[MatchEvent]) -> Option<&MatchEvent> {
     events
         .iter()
-        .filter(|event| !event_text(event).is_empty())
+        .filter(|event| has_event_text(event))
         .max_by_key(|event| (event.minute.unwrap_or(0), event.stoppage.unwrap_or(0)))
+}
+
+/// Whether an event carries commentary text (a player name or detail), without
+/// allocating the formatted string. Mirrors `event_text` being non-empty.
+fn has_event_text(event: &MatchEvent) -> bool {
+    event.player.as_deref().is_some_and(|p| !p.is_empty())
+        || event.detail.as_deref().is_some_and(|d| !d.is_empty())
 }
 
 fn event_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
