@@ -255,10 +255,17 @@ mod tests {
     use super::*;
 
     fn timezone_of(toml_src: &str) -> TimezonePref {
-        toml::from_str::<Config>(toml_src)
-            .expect("parse")
-            .ui
-            .timezone
+        match toml::from_str::<Config>(toml_src) {
+            Ok(cfg) => cfg.ui.timezone,
+            Err(err) => panic!("parse failed: {err}"),
+        }
+    }
+
+    fn to_toml(cfg: &Config) -> String {
+        match toml::to_string_pretty(cfg) {
+            Ok(text) => text,
+            Err(err) => panic!("serialise failed: {err}"),
+        }
     }
 
     #[test]
@@ -293,10 +300,10 @@ mod tests {
     fn timezone_round_trips_as_compact_forms() {
         let mut cfg = Config::default();
         cfg.ui.timezone = TimezonePref::FixedOffset(-4);
-        let text = toml::to_string_pretty(&cfg).expect("serialise");
+        let text = to_toml(&cfg);
         assert!(text.contains("timezone = -4"), "got:\n{text}");
         cfg.ui.timezone = TimezonePref::Utc;
-        let text = toml::to_string_pretty(&cfg).expect("serialise");
+        let text = to_toml(&cfg);
         assert!(text.contains("timezone = \"utc\""), "got:\n{text}");
     }
 }
