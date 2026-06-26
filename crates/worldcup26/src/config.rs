@@ -8,12 +8,15 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 use wc_data::{ProviderConfig, ProviderKind};
 
 /// How kickoff times are displayed.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
+///
+/// In the config file this is written as `"local"`, `"utc"`, or a bare integer
+/// hour offset from UTC (e.g. `-4`). The legacy `{ fixed-offset = N }` table
+/// form is still accepted when reading.
+#[derive(Debug, Clone, Default)]
 pub enum TimezonePref {
     /// Convert to the system local timezone (default).
     #[default]
@@ -22,6 +25,75 @@ pub enum TimezonePref {
     Utc,
     /// A fixed offset in whole hours from UTC (e.g. `-4`).
     FixedOffset(i8),
+}
+
+impl Serialize for TimezonePref {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            TimezonePref::Local => serializer.serialize_str("local"),
+            TimezonePref::Utc => serializer.serialize_str("utc"),
+            TimezonePref::FixedOffset(hours) => serializer.serialize_i8(*hours),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TimezonePref {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct PrefVisitor;
+
+        fn offset_from<E: de::Error>(value: i64) -> Result<TimezonePref, E> {
+            i8::try_from(value)
+                .map(TimezonePref::FixedOffset)
+                .map_err(|_| E::custom(format!("timezone offset {value} out of range")))
+        }
+
+        impl<'de> de::Visitor<'de> for PrefVisitor {
+            type Value = TimezonePref;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                f.write_str("\"local\", \"utc\", or an integer hour offset from UTC")
+            }
+
+            fn visit_str<E: de::Error>(self, value: &str) -> Result<TimezonePref, E> {
+                match value.trim().to_ascii_lowercase().as_str() {
+                    "local" => Ok(TimezonePref::Local),
+                    "utc" => Ok(TimezonePref::Utc),
+                    other => other.parse::<i64>().map_or_else(
+                        |_| Err(E::custom(format!("invalid timezone {value:?}"))),
+                        offset_from,
+                    ),
+                }
+            }
+
+            fn visit_i64<E: de::Error>(self, value: i64) -> Result<TimezonePref, E> {
+                offset_from(value)
+            }
+
+            fn visit_u64<E: de::Error>(self, value: u64) -> Result<TimezonePref, E> {
+                offset_from(i64::try_from(value).unwrap_or(i64::MAX))
+            }
+
+            // Back-compat: accept the older `{ fixed-offset = N }` table form.
+            fn visit_map<A: de::MapAccess<'de>>(
+                self,
+                mut map: A,
+            ) -> Result<TimezonePref, A::Error> {
+                let mut offset: Option<i8> = None;
+                while let Some(key) = map.next_key::<String>()? {
+                    if key == "fixed-offset" || key == "fixed_offset" {
+                        offset = Some(map.next_value()?);
+                    } else {
+                        map.next_value::<de::IgnoredAny>()?;
+                    }
+                }
+                offset
+                    .map(TimezonePref::FixedOffset)
+                    .ok_or_else(|| de::Error::custom("missing fixed-offset"))
+            }
+        }
+
+        deserializer.deserialize_any(PrefVisitor)
+    }
 }
 
 /// Top-level configuration.
@@ -175,5 +247,63 @@ impl Config {
             self.favorites.push(name.to_owned());
             true
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn timezone_of(toml_src: &str) -> TimezonePref {
+        match toml::from_str::<Config>(toml_src) {
+            Ok(cfg) => cfg.ui.timezone,
+            Err(err) => panic!("parse failed: {err}"),
+        }
+    }
+
+    fn to_toml(cfg: &Config) -> String {
+        match toml::to_string_pretty(cfg) {
+            Ok(text) => text,
+            Err(err) => panic!("serialise failed: {err}"),
+        }
+    }
+
+    #[test]
+    fn timezone_accepts_local_and_utc_strings() {
+        assert!(matches!(
+            timezone_of("[ui]\ntimezone = \"local\"\n"),
+            TimezonePref::Local
+        ));
+        assert!(matches!(
+            timezone_of("[ui]\ntimezone = \"utc\"\n"),
+            TimezonePref::Utc
+        ));
+    }
+
+    #[test]
+    fn timezone_accepts_bare_integer_offset() {
+        assert!(matches!(
+            timezone_of("[ui]\ntimezone = -4\n"),
+            TimezonePref::FixedOffset(-4)
+        ));
+    }
+
+    #[test]
+    fn timezone_accepts_legacy_table_form() {
+        assert!(matches!(
+            timezone_of("[ui.timezone]\nfixed-offset = 5\n"),
+            TimezonePref::FixedOffset(5)
+        ));
+    }
+
+    #[test]
+    fn timezone_round_trips_as_compact_forms() {
+        let mut cfg = Config::default();
+        cfg.ui.timezone = TimezonePref::FixedOffset(-4);
+        let text = to_toml(&cfg);
+        assert!(text.contains("timezone = -4"), "got:\n{text}");
+        cfg.ui.timezone = TimezonePref::Utc;
+        let text = to_toml(&cfg);
+        assert!(text.contains("timezone = \"utc\""), "got:\n{text}");
     }
 }
