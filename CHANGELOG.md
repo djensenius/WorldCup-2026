@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.2](https://github.com/djensenius/WorldCup-2026/compare/v0.2.1...v0.2.2) (2026-06-26)
+
+
+### Bug Fixes
+
+* refresh lockfile before publishing crates ([7f92d5b](https://github.com/djensenius/WorldCup-2026/commit/7f92d5b12c4c6d706c001efdb09e88a7c56646c7))
+* support tmux wezterm flags and cli ui overrides ([#12](https://github.com/djensenius/WorldCup-2026/issues/12)) ([1b8ef65](https://github.com/djensenius/WorldCup-2026/commit/1b8ef65a03831ddf41996d3d1cf25744fb0f1eb5))
+* use crates api for publish checks ([d1f30cc](https://github.com/djensenius/WorldCup-2026/commit/d1f30cc3820da6235b661e296ae39590943fa97c))
+
 ## [0.2.1](https://github.com/djensenius/WorldCup-2026/compare/v0.2.0...v0.2.1) (2026-06-16)
 
 
