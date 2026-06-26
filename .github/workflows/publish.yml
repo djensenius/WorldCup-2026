@@ -157,6 +157,13 @@ jobs:
       - uses: Swatinem/rust-cache@23869a5bd66c73db3c0ac40331f3206eb23791dc # v2.9.1
         with:
           key: publish-crates
+      - name: Sync workspace lockfile versions
+        if: ${{ needs.resolve.outputs.draft != 'true' }}
+        # release-please (release-type "simple") bumps Cargo.toml but not
+        # Cargo.lock, leaving the workspace members' lock entries behind. Sync
+        # just those entries (no other dependencies change) so the subsequent
+        # `--locked` verify and `cargo publish --locked` succeed.
+        run: cargo update --workspace
       - name: Verify release lockfile
         if: ${{ needs.resolve.outputs.draft != 'true' }}
         run: cargo metadata --locked --format-version 1 --no-deps > /dev/null
@@ -205,7 +212,7 @@ jobs:
               exit 1
             fi
           fi
-          cargo publish -p wc-data --locked
+          cargo publish -p wc-data --locked --allow-dirty
       - name: Wait for wc-data to be indexed
         if: ${{ needs.resolve.outputs.draft != 'true' }}
         env:
@@ -269,7 +276,7 @@ jobs:
               exit 1
             fi
           fi
-          cargo publish -p worldcup26 --locked
+          cargo publish -p worldcup26 --locked --allow-dirty
 
   release:
     needs: [resolve, build-deb, build-tarball, build-zip, publish-crates]
