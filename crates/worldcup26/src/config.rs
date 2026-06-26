@@ -58,10 +58,10 @@ impl<'de> Deserialize<'de> for TimezonePref {
                 match value.trim().to_ascii_lowercase().as_str() {
                     "local" => Ok(TimezonePref::Local),
                     "utc" => Ok(TimezonePref::Utc),
-                    other => other
-                        .parse::<i8>()
-                        .map(TimezonePref::FixedOffset)
-                        .map_err(|_| E::custom(format!("invalid timezone {value:?}"))),
+                    other => other.parse::<i64>().map_or_else(
+                        |_| Err(E::custom(format!("invalid timezone {value:?}"))),
+                        offset_from,
+                    ),
                 }
             }
 
