@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/djensenius/WorldCup-2026/compare/v0.2.2...v0.2.3) (2026-06-26)
+
+
+### Bug Fixes
+
+* align Live card flags, top-anchor schedule, document config ([#13](https://github.com/djensenius/WorldCup-2026/issues/13)) ([4b10ac5](https://github.com/djensenius/WorldCup-2026/commit/4b10ac5db963d0ecde5ad7516bcd8f75a75d6734))
+
 ## [0.2.2](https://github.com/djensenius/WorldCup-2026/compare/v0.2.1...v0.2.2) (2026-06-26)
 
 
