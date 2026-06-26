@@ -3488,7 +3488,7 @@ dependencies = [
 
 [[package]]
 name = "wc-data"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "reqwest",
  "serde",
@@ -4068,7 +4068,7 @@ dependencies = [
 
 [[package]]
 name = "worldcup26"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "clap",
