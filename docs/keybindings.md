@@ -41,13 +41,13 @@ The protocol is detected from environment variables only — we never issue a
 terminal query, which can break key input inside multiplexers.
 
 **Inside tmux** flags work too: the graphics escapes are sent through tmux
-passthrough to the outer terminal, and `allow-passthrough` is enabled
-automatically. This needs tmux 3.3+ and a graphics-capable outer terminal. Note
-that WezTerm uses the **iTerm2** protocol (auto-detected) — forcing
-`WORLDCUP26_GRAPHICS=kitty` there will not render, so prefer auto-detection.
+passthrough to the outer terminal. WorldCup26 reads tmux's outer environment and
+auto-detects WezTerm panes even when the in-pane `TERM_PROGRAM` is `tmux`; WezTerm
+uses the iTerm2 graphics protocol. This needs tmux 3.3+ and a graphics-capable
+outer terminal.
 
-Set `WORLDCUP26_GRAPHICS` to `kitty`, `iterm2`, `sixel`, `halfblocks`, or `off` only
-to override detection.
+Set `--graphics <auto|kitty|iterm2|sixel|halfblocks|off>` or
+`WORLDCUP26_GRAPHICS` to override detection.
 
 ## Matches
 

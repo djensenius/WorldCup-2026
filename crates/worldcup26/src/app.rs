@@ -119,6 +119,7 @@ struct TabHitboxes {
 /// The running application.
 pub struct App {
     config: Config,
+    persisted_config: Config,
     config_path: PathBuf,
     provider: SharedProvider,
     theme: Theme,
@@ -152,6 +153,7 @@ impl App {
     #[must_use]
     pub fn new(
         config: Config,
+        persisted_config: Config,
         config_path: PathBuf,
         provider: Provider,
         local_offset: UtcOffset,
@@ -186,6 +188,7 @@ impl App {
 
         Self {
             config,
+            persisted_config,
             config_path,
             provider: Arc::new(provider),
             theme,
@@ -442,7 +445,8 @@ impl App {
         } else {
             "off"
         };
-        match self.config.save_to(&self.config_path) {
+        self.persisted_config.ui.show_flags = self.config.ui.show_flags;
+        match self.persisted_config.save_to(&self.config_path) {
             Ok(()) => self.toasts.info(format!("Flags {state}")),
             Err(err) => self.toasts.warn(format!("Could not save setting: {err}")),
         }
@@ -519,12 +523,15 @@ impl App {
     /// Toggle a team's favourite status, persist the config, and notify.
     pub fn toggle_favorite(&mut self, name: &str, abbreviation: &str) {
         let now_favorite = self.config.toggle_favorite(name, abbreviation);
+        self.persisted_config
+            .favorites
+            .clone_from(&self.config.favorites);
         let message = if now_favorite {
             format!("{} Favourited {name}", self.icons.star())
         } else {
             format!("Removed {name} from favourites")
         };
-        match self.config.save_to(&self.config_path) {
+        match self.persisted_config.save_to(&self.config_path) {
             Ok(()) => self.toasts.info(message),
             Err(err) => self
                 .toasts
@@ -643,7 +650,8 @@ impl App {
         let name = theme::NAMES[self.theme_index];
         self.theme = Theme::from_name(name);
         name.clone_into(&mut self.config.ui.theme);
-        match self.config.save_to(&self.config_path) {
+        name.clone_into(&mut self.persisted_config.ui.theme);
+        match self.persisted_config.save_to(&self.config_path) {
             Ok(()) => self.toasts.info(format!("Theme: {name}")),
             Err(err) => self.toasts.warn(format!("Could not save theme: {err}")),
         }

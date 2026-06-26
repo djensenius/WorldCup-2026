@@ -60,6 +60,13 @@ WorldCup26 uses ESPN by default and does not require an API key. Optional provid
 can be enabled with `WORLDCUP26_API_FOOTBALL_KEY` or `WORLDCUP26_FOOTBALL_DATA_KEY`; see
 [Data providers](#data-providers).
 
+Common UI settings can be overridden inline for a single run:
+
+```sh
+worldcup26 --nerd-fonts --graphics auto
+worldcup26 --theme catppuccin-mocha --timezone -4
+```
+
 ### Run from source
 
 ```sh
@@ -79,7 +86,10 @@ WorldCup26 normalizes several upstream APIs behind one interface:
 | football-data.org  | Yes     | Limited live detail; set `WORLDCUP26_FOOTBALL_DATA_KEY`. |
 
 Select a provider with `--provider <espn|api-football|football-data>` or in the
-config file.
+config file. UI settings can also be overridden inline with flags such as
+`--nerd-fonts`, `--no-nerd-fonts`, `--flags`, `--no-flags`, `--theme <name>`,
+`--timezone <local|utc|offset>`, and
+`--graphics <auto|kitty|iterm2|sixel|halfblocks|off>`.
 
 ## Keybindings
 
