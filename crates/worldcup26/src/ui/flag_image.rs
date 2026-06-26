@@ -46,7 +46,16 @@ pub fn make_picker(override_mode: Option<&str>) -> Option<Picker> {
     }
     // Detects tmux and marks `is_tmux` so escapes are wrapped in tmux
     // passthrough. No stdin.
-    let mut picker = Picker::halfblocks();
+    //
+    // ratatui-image's no-stdin pickers fall back to a guessed cell size of
+    // 10x20px. The iTerm2/Sixel encoders emit images sized in absolute pixels,
+    // so a wrong cell size makes a card occupy the wrong number of cells (it
+    // anchors top-left and drifts away from the centred text labels). Feed the
+    // picker the real terminal cell size when we can learn it without a stdin
+    // query (from tmux, or the TIOCGWINSZ ioctl), so cards fill exactly the
+    // cells we reserve for them and line up with the names above. `from_fontsize`
+    // performs the same tmux/outer-protocol env detection as `halfblocks`.
+    let mut picker = base_picker(detect_cell_size());
     let protocol = forced
         .as_deref()
         .and_then(parse_protocol)
@@ -54,6 +63,58 @@ pub fn make_picker(override_mode: Option<&str>) -> Option<Picker> {
         .or_else(guess_extra_protocol)?;
     picker.set_protocol_type(protocol);
     Some(picker)
+}
+
+/// Build the base picker, seeding it with a known real cell size when we have
+/// one (so pixel-sized graphics fill the cells we reserve) and otherwise using
+/// the default guess. Both constructors run the same no-stdin tmux/outer-
+/// protocol env detection.
+#[allow(deprecated)]
+fn base_picker(font_size: Option<(u16, u16)>) -> Picker {
+    font_size.map_or_else(Picker::halfblocks, Picker::from_fontsize)
+}
+
+/// The terminal's cell size in pixels `(width, height)`, learned without a
+/// stdin query: from tmux's reported client cell size when inside tmux, else
+/// from the `TIOCGWINSZ` ioctl. Returns `None` if it can't be determined (e.g.
+/// the multiplexer or terminal doesn't report pixel dimensions), in which case
+/// the picker keeps its default guess.
+fn detect_cell_size() -> Option<(u16, u16)> {
+    tmux_cell_size().or_else(winsize_cell_size)
+}
+
+/// Cell size in pixels as reported by tmux (`client_cell_width`/`_height`).
+/// tmux zeroes the pty's `TIOCGWINSZ` pixel fields, so this is the only way to
+/// recover the real cell size inside tmux.
+fn tmux_cell_size() -> Option<(u16, u16)> {
+    std::env::var("TMUX").ok()?;
+    let output = Command::new("tmux")
+        .args([
+            "display-message",
+            "-p",
+            "#{client_cell_width} #{client_cell_height}",
+        ])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut parts = text.split_whitespace();
+    let w: u16 = parts.next()?.parse().ok()?;
+    let h: u16 = parts.next()?.parse().ok()?;
+    (w > 0 && h > 0).then_some((w, h))
+}
+
+/// Cell size in pixels from the `TIOCGWINSZ` ioctl on stdout. This reads the
+/// terminal's window size (no stdin interaction), dividing the pixel extent by
+/// the cell grid. Returns `None` when the terminal doesn't report pixels.
+fn winsize_cell_size() -> Option<(u16, u16)> {
+    let ws = rustix::termios::tcgetwinsize(std::io::stdout()).ok()?;
+    if ws.ws_xpixel == 0 || ws.ws_ypixel == 0 || ws.ws_col == 0 || ws.ws_row == 0 {
+        return None;
+    }
+    Some((ws.ws_xpixel / ws.ws_col, ws.ws_ypixel / ws.ws_row))
 }
 
 fn parse_protocol(name: &str) -> Option<ProtocolType> {
@@ -159,7 +220,63 @@ fn tmux_has_sixel() -> bool {
 /// A cache of rendered flag protocols, keyed by team code and cell size.
 pub struct FlagStore {
     picker: Picker,
-    cache: HashMap<(String, u16, u16), Protocol>,
+    /// Composited Live-card images (home flag + score + away flag), keyed by
+    /// their full layout/content fingerprint.
+    cards: HashMap<String, Protocol>,
+}
+
+/// The blocky score drawn between the two flags in a composited Live card.
+pub struct ScoreBlocks {
+    /// Row-major filled-cell mask, `cols` wide and 5 rows tall.
+    pub mask: Vec<bool>,
+    /// Width of the score in cells.
+    pub cols: u16,
+    /// Fill colour as straight RGBA.
+    pub rgba: [u8; 4],
+}
+
+/// A fully specified Live-card body to composite into a single image: two flags
+/// flanking a blocky score, laid out in terminal cells.
+pub struct FlagCard<'a> {
+    /// Home team code (e.g. `NOR`).
+    pub home: &'a str,
+    /// Away team code (e.g. `FRA`).
+    pub away: &'a str,
+    /// Width/height of each flag, in cells.
+    pub flag_cols: u16,
+    /// Height of each flag, in cells.
+    pub flag_rows: u16,
+    /// Horizontal gap between a flag and the score, in cells.
+    pub gap_cols: u16,
+    /// Total card width, in cells.
+    pub width_cols: u16,
+    /// Total card height, in cells.
+    pub height_rows: u16,
+    /// The score drawn between the flags.
+    pub score: ScoreBlocks,
+}
+
+impl FlagCard<'_> {
+    fn cache_key(&self) -> String {
+        let mask: String = self
+            .score
+            .mask
+            .iter()
+            .map(|&on| if on { '1' } else { '0' })
+            .collect();
+        format!(
+            "{}|{}|{}x{}|g{}|{}x{}|s{}|{:?}|{mask}",
+            self.home.to_ascii_uppercase(),
+            self.away.to_ascii_uppercase(),
+            self.flag_cols,
+            self.flag_rows,
+            self.gap_cols,
+            self.width_cols,
+            self.height_rows,
+            self.score.cols,
+            self.score.rgba,
+        )
+    }
 }
 
 impl FlagStore {
@@ -168,7 +285,7 @@ impl FlagStore {
     pub fn new(picker: Picker) -> Self {
         Self {
             picker,
-            cache: HashMap::new(),
+            cards: HashMap::new(),
         }
     }
 
@@ -178,43 +295,124 @@ impl FlagStore {
         self.picker.protocol_type() != ProtocolType::Halfblocks
     }
 
-    /// Get (building and caching on first use) the flag protocol for `code`
-    /// sized to a `cols`×`rows` cell area. Returns `None` if no flag exists for
-    /// the code or it cannot be rendered.
-    pub fn flag(&mut self, code: &str, cols: u16, rows: u16) -> Option<&Protocol> {
-        if cols == 0 || rows == 0 {
+    /// Get (building and caching on first use) a composited Live-card image:
+    /// the home flag, the blocky score, and the away flag drawn into a single
+    /// image. Rendering the whole card as one image avoids multi-image / image+
+    /// text rendering desync under terminal multiplexers (e.g. WezTerm + tmux),
+    /// where only the first image on a row would otherwise survive. Returns
+    /// `None` if the card has no area.
+    pub fn card(&mut self, card: &FlagCard) -> Option<&Protocol> {
+        if card.width_cols == 0 || card.height_rows == 0 {
             return None;
         }
-        let key = (code.to_ascii_uppercase(), cols, rows);
-        if !self.cache.contains_key(&key) {
-            let svg = svg(&key.0)?;
+        let key = card.cache_key();
+        if !self.cards.contains_key(&key) {
             let (fw, fh) = self.picker.font_size();
-            let width = u32::from(cols) * u32::from(fw);
-            let height = u32::from(rows) * u32::from(fh);
-            let image = rasterize(svg, width, height)?;
+            let image = composite_card(card, fw, fh)?;
             let protocol = self
                 .picker
-                .new_protocol(image, Rect::new(0, 0, cols, rows), Resize::Fit(None))
+                .new_protocol(
+                    image,
+                    Rect::new(0, 0, card.width_cols, card.height_rows),
+                    Resize::Fit(None),
+                )
                 .ok()?;
-            self.cache.insert(key.clone(), protocol);
+            self.cards.insert(key.clone(), protocol);
         }
-        self.cache.get(&key)
+        self.cards.get(&key)
     }
 }
 
-fn rasterize(svg: &str, width: u32, height: u32) -> Option<DynamicImage> {
-    if width == 0 || height == 0 {
+/// Compose a [`FlagCard`] into a single RGBA image at `fw`×`fh` pixels per cell.
+fn composite_card(card: &FlagCard, fw: u16, fh: u16) -> Option<DynamicImage> {
+    let (fw, fh) = (u32::from(fw), u32::from(fh));
+    let canvas_w = u32::from(card.width_cols) * fw;
+    let canvas_h = u32::from(card.height_rows) * fh;
+    if canvas_w == 0 || canvas_h == 0 {
+        return None;
+    }
+    let mut canvas = RgbaImage::new(canvas_w, canvas_h);
+
+    let flag_box_w = u32::from(card.flag_cols) * fw;
+    let flag_box_h = u32::from(card.flag_rows) * fh;
+    let flag_y = i64::from(card.height_rows.saturating_sub(card.flag_rows) / 2) * i64::from(fh);
+
+    if let Some(home) =
+        svg(&card.home.to_ascii_uppercase()).and_then(|s| rasterize_fit(s, flag_box_w, flag_box_h))
+    {
+        image::imageops::overlay(&mut canvas, &home, 0, flag_y);
+    }
+    let away_x_cells = card.flag_cols + card.gap_cols + card.score.cols + card.gap_cols;
+    if let Some(away) =
+        svg(&card.away.to_ascii_uppercase()).and_then(|s| rasterize_fit(s, flag_box_w, flag_box_h))
+    {
+        image::imageops::overlay(
+            &mut canvas,
+            &away,
+            i64::from(u32::from(away_x_cells) * fw),
+            flag_y,
+        );
+    }
+
+    draw_score(&mut canvas, card, fw, fh);
+    Some(DynamicImage::ImageRgba8(canvas))
+}
+
+/// Paint the blocky score mask onto the card canvas.
+fn draw_score(canvas: &mut RgbaImage, card: &FlagCard, fw: u32, fh: u32) {
+    let cols = u32::from(card.score.cols);
+    if cols == 0 {
+        return;
+    }
+    let mask_rows = u32::try_from(card.score.mask.len()).unwrap_or(0) / cols;
+    if mask_rows == 0 {
+        return;
+    }
+    let score_left_cells = u32::from(card.flag_cols + card.gap_cols);
+    let mask_height = u16::try_from(mask_rows).unwrap_or(0);
+    let score_top_cells = u32::from(card.height_rows.saturating_sub(mask_height) / 2);
+    let pixel = image::Rgba(card.score.rgba);
+    let (canvas_w, canvas_h) = (canvas.width(), canvas.height());
+    for cy in 0..mask_rows {
+        for cx in 0..cols {
+            if !card.score.mask[(cy * cols + cx) as usize] {
+                continue;
+            }
+            let x0 = (score_left_cells + cx) * fw;
+            let y0 = (score_top_cells + cy) * fh;
+            for dy in 0..fh {
+                for dx in 0..fw {
+                    let (px, py) = (x0 + dx, y0 + dy);
+                    if px < canvas_w && py < canvas_h {
+                        canvas.put_pixel(px, py, pixel);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Rasterize an SVG to fit (preserving aspect ratio, centred and letterboxed
+/// with transparency) within a `box_w`×`box_h` pixel box.
+fn rasterize_fit(svg: &str, box_w: u32, box_h: u32) -> Option<RgbaImage> {
+    if box_w == 0 || box_h == 0 {
         return None;
     }
     let tree = usvg::Tree::from_str(svg, &usvg::Options::default()).ok()?;
-    let mut pixmap = resvg::tiny_skia::Pixmap::new(width, height)?;
     let size = tree.size();
-    let scale_x = (f64::from(width) / f64::from(size.width())) as f32;
-    let scale_y = (f64::from(height) / f64::from(size.height())) as f32;
-    let transform = resvg::tiny_skia::Transform::from_scale(scale_x, scale_y);
+    let scale = (f64::from(box_w) / f64::from(size.width()))
+        .min(f64::from(box_h) / f64::from(size.height())) as f32;
+    let iw = ((f64::from(size.width()) * f64::from(scale)).round() as u32).max(1);
+    let ih = ((f64::from(size.height()) * f64::from(scale)).round() as u32).max(1);
+    let mut pixmap = resvg::tiny_skia::Pixmap::new(iw, ih)?;
+    let transform = resvg::tiny_skia::Transform::from_scale(scale, scale);
     resvg::render(&tree, transform, &mut pixmap.as_mut());
-    let rgba = RgbaImage::from_raw(width, height, pixmap.data().to_vec())?;
-    Some(DynamicImage::ImageRgba8(rgba))
+    let flag = RgbaImage::from_raw(iw, ih, pixmap.data().to_vec())?;
+    let mut canvas = RgbaImage::new(box_w, box_h);
+    let ox = i64::from(box_w.saturating_sub(iw) / 2);
+    let oy = i64::from(box_h.saturating_sub(ih) / 2);
+    image::imageops::overlay(&mut canvas, &flag, ox, oy);
+    Some(canvas)
 }
 
 /// Whether a flag is available for a team code (cheap: no rasterization).
@@ -283,7 +481,11 @@ fn svg(code: &str) -> Option<&'static str> {
 mod tests {
     use ratatui_image::picker::ProtocolType;
 
-    use super::{guess_from_env, has_flag, parse_tmux_environment, rasterize, svg};
+    use super::{
+        FlagCard, ScoreBlocks, composite_card, guess_from_env, has_flag, parse_tmux_environment,
+        rasterize_fit, svg,
+    };
+    use image::RgbaImage;
 
     const TEAMS: [&str; 48] = [
         "ALG", "ARG", "AUS", "AUT", "BEL", "BIH", "BRA", "CAN", "CIV", "COD", "COL", "CPV", "CRO",
@@ -310,9 +512,35 @@ mod tests {
     fn embedded_svgs_rasterize() {
         for code in ["CAN", "USA", "MEX", "BRA", "KOR"] {
             let s = svg(code).unwrap_or("");
-            let img = rasterize(s, 96, 64);
+            let img = rasterize_fit(s, 96, 64);
             assert!(img.is_some(), "failed to rasterize {code}");
+            let img = img.unwrap_or_else(|| RgbaImage::new(1, 1));
+            assert_eq!((img.width(), img.height()), (96, 64));
         }
+    }
+
+    #[test]
+    fn composite_card_has_expected_pixel_dimensions() {
+        let mask_cols = 14u16;
+        let card = FlagCard {
+            home: "NOR",
+            away: "FRA",
+            flag_cols: 12,
+            flag_rows: 8,
+            gap_cols: 3,
+            width_cols: 12 + 3 + mask_cols + 3 + 12,
+            height_rows: 8,
+            score: ScoreBlocks {
+                mask: vec![true; usize::from(mask_cols) * 5],
+                cols: mask_cols,
+                rgba: [245, 203, 110, 255],
+            },
+        };
+        let Some(img) = composite_card(&card, 6, 12) else {
+            panic!("composite produced no image");
+        };
+        assert_eq!(img.width(), u32::from(card.width_cols) * 6);
+        assert_eq!(img.height(), u32::from(card.height_rows) * 12);
     }
 
     #[test]

@@ -31,6 +31,7 @@ ratatui = { workspace = true }
 ratatui-image = { workspace = true }
 resvg = { workspace = true }
 image = { workspace = true }
+rustix = { workspace = true }
 crossterm = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }

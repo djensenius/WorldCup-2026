@@ -13,7 +13,7 @@ use ratatui::Frame;
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::Paragraph;
+use ratatui::widgets::{Paragraph, Wrap};
 use ratatui_image::Image;
 use time::OffsetDateTime;
 use wc_data::domain::{Match, MatchEvent, MatchEventKind, MatchStatus, Score, Stage, Team};
@@ -32,8 +32,12 @@ const UPCOMING_LIMIT: usize = 24;
 const SCORE_ROWS: u16 = 5;
 /// Horizontal gap (cells) between a flag and the score.
 const FLAG_GAP: u16 = 3;
+/// Rows reserved for the most-recent-event / context line so long commentary can
+/// wrap instead of running off the right edge.
+const CONTEXT_ROWS: u16 = 3;
 /// Non-body rows in the card: status, names, context, pager and their gaps.
-const CHROME_ROWS: u16 = 7;
+/// (status + gap + names + gap + [`CONTEXT_ROWS`] + gap + pager.)
+const CHROME_ROWS: u16 = 6 + CONTEXT_ROWS;
 /// Bounds (in rows) for the dynamically-sized Live flags.
 const MIN_FLAG_ROWS: u16 = 6;
 const MAX_FLAG_ROWS: u16 = 16;
@@ -123,44 +127,36 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let names_y = top + 2;
     let body_y = top + 3;
     let context_y = body_y + body_h + 1;
-    let pager_y = context_y + 2;
+    let pager_y = context_y + CONTEXT_ROWS + 1;
 
     let full = |y: u16| Rect::new(inner.x, y, inner.width, 1);
     centered(frame, full(top), status_line(app, m, is_live, theme));
 
     if flags {
         let block_x = (inner.x + inner.width / 2).saturating_sub(block_w / 2);
-        let home_x = block_x;
-        let score_x = block_x + flag_cols + FLAG_GAP;
-        let away_x = score_x + score_w + FLAG_GAP;
-        let flag_y = body_y + (body_h - flag_rows) / 2;
-        let score_y = body_y + (body_h - SCORE_ROWS) / 2;
 
-        centered(
-            frame,
-            Rect::new(home_x, names_y, flag_cols, 1),
-            team_name_line(app, &m.home, flag_cols, theme),
-        );
-        centered(
-            frame,
-            Rect::new(away_x, names_y, flag_cols, 1),
-            team_name_line(app, &m.away, flag_cols, theme),
-        );
-        render_flag(
+        // A single centred "Home v Away" line. The flags+score are drawn as one
+        // image whose on-screen width depends on the terminal's real font size
+        // (which we can't know under tmux), so name labels pinned beside each
+        // flag would drift out of alignment; a centred line over the whole card
+        // stays correct regardless.
+        centered(frame, full(names_y), names_line(app, m, theme));
+        // Render the whole card body (home flag · score · away flag) as a single
+        // image. Drawing two flags and the text score separately desyncs under
+        // WezTerm + tmux, leaving only the first flag visible; one image is safe.
+        render_card(
             app,
             frame,
-            &m.home.abbreviation,
-            Rect::new(home_x, flag_y, flag_cols, flag_rows),
-        );
-        render_flag(
-            app,
-            frame,
-            &m.away.abbreviation,
-            Rect::new(away_x, flag_y, flag_cols, flag_rows),
-        );
-        frame.render_widget(
-            Paragraph::new(big_glyphs(&score, score_color)),
-            Rect::new(score_x, score_y, score_w, SCORE_ROWS),
+            m,
+            &score,
+            score_color,
+            CardDims {
+                flag_cols,
+                flag_rows,
+                width_cols: block_w,
+                height_rows: body_h,
+            },
+            Rect::new(block_x, body_y, block_w, body_h),
         );
     } else {
         centered(frame, full(names_y), names_line(app, m, theme));
@@ -176,7 +172,12 @@ pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     } else {
         Line::from(Span::styled(context_tag(m), Style::new().fg(theme.dim)))
     };
-    centered(frame, full(context_y), context);
+    frame.render_widget(
+        Paragraph::new(context)
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true }),
+        Rect::new(inner.x, context_y, inner.width, CONTEXT_ROWS),
+    );
 
     let label = if is_live { "live" } else { "upcoming" };
     centered(
@@ -207,40 +208,77 @@ fn flag_available(app: &App, code: &str) -> bool {
     app.flags().is_some() && flag_image::has_flag(code)
 }
 
-/// Draw a team's flag image into `rect`, if a flag exists for the code.
-fn render_flag(app: &App, frame: &mut Frame, code: &str, rect: Rect) {
-    let Some(store) = app.flags() else {
+/// Cell dimensions describing a composited Live-card body.
+#[derive(Clone, Copy)]
+struct CardDims {
+    flag_cols: u16,
+    flag_rows: u16,
+    width_cols: u16,
+    height_rows: u16,
+}
+
+/// Draw the composited Live card (home flag · score · away flag) as one image.
+fn render_card(
+    app: &App,
+    frame: &mut Frame,
+    m: &Match,
+    score_str: &str,
+    score_color: Color,
+    dims: CardDims,
+    rect: Rect,
+) {
+    let Some(flag_store) = app.flags() else {
         return;
     };
-    let mut store = store.borrow_mut();
-    if let Some(protocol) = store.flag(code, rect.width, rect.height) {
+    let (mask, cols) = score_mask(score_str);
+    let card = flag_image::FlagCard {
+        home: &m.home.abbreviation,
+        away: &m.away.abbreviation,
+        flag_cols: dims.flag_cols,
+        flag_rows: dims.flag_rows,
+        gap_cols: FLAG_GAP,
+        width_cols: dims.width_cols,
+        height_rows: dims.height_rows,
+        score: flag_image::ScoreBlocks {
+            mask,
+            cols,
+            rgba: color_rgba(score_color),
+        },
+    };
+    let mut flag_store = flag_store.borrow_mut();
+    if let Some(protocol) = flag_store.card(&card) {
         frame.render_widget(Image::new(protocol), rect);
     }
 }
 
-/// A single team's name (or abbreviation when it would overflow `width`),
-/// styled bold and accented when the team is a favourite.
-fn team_name_line(app: &App, team: &Team, width: u16, theme: &Theme) -> Line<'static> {
-    let fav = app.config().is_favorite(&team.name, &team.abbreviation);
-    let style = if fav {
-        Style::new().fg(theme.accent).add_modifier(Modifier::BOLD)
-    } else {
-        Style::new().fg(theme.fg).add_modifier(Modifier::BOLD)
-    };
-    Line::from(Span::styled(
-        display_name(&team.name, &team.abbreviation, width),
-        style,
-    ))
+/// Build a filled-cell mask (row-major, `cols`×5) for the big-glyph `score`.
+fn score_mask(score: &str) -> (Vec<bool>, u16) {
+    let cols = big_width(score);
+    let width = usize::from(cols);
+    let mut mask = vec![false; width * 5];
+    let mut x = 0usize;
+    for (i, ch) in score.chars().enumerate() {
+        if i > 0 {
+            x += 1; // inter-glyph spacing column
+        }
+        let rows = glyph(ch);
+        for (row, cells) in rows.iter().enumerate() {
+            for (col, cell) in cells.chars().enumerate() {
+                if cell != ' ' && x + col < width {
+                    mask[row * width + x + col] = true;
+                }
+            }
+        }
+        x += 4;
+    }
+    (mask, cols)
 }
 
-/// The label to show for a team in `width` cells: the full name when it is
-/// non-empty and fits, otherwise the abbreviation when available, else the name.
-fn display_name(name: &str, abbreviation: &str, width: u16) -> String {
-    let name_fits = !name.is_empty() && name.chars().count() <= usize::from(width);
-    if name_fits || abbreviation.is_empty() {
-        name.to_owned()
-    } else {
-        abbreviation.to_owned()
+/// Convert a theme colour to straight RGBA, defaulting to white for non-RGB.
+fn color_rgba(color: Color) -> [u8; 4] {
+    match color {
+        Color::Rgb(r, g, b) => [r, g, b, 255],
+        _ => [255, 255, 255, 255],
     }
 }
 
@@ -367,12 +405,16 @@ fn names_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
     ])
 }
 
-/// The most recent event by match time. Providers don't agree on ordering
-/// (ESPN lists key events newest-first), so select by minute rather than
-/// relying on the position in the list.
+/// The most recent event by match time that carries descriptive text.
+///
+/// Providers don't agree on ordering (ESPN lists key events newest-first), so we
+/// select by minute rather than list position. Events whose [`event_text`] is
+/// empty (a bare minute with no commentary) are skipped so the card always shows
+/// something meaningful about what is happening.
 fn latest_event(events: &[MatchEvent]) -> Option<&MatchEvent> {
     events
         .iter()
+        .filter(|event| !event_text(event).is_empty())
         .max_by_key(|event| (event.minute.unwrap_or(0), event.stoppage.unwrap_or(0)))
 }
 
@@ -389,13 +431,15 @@ fn event_line(app: &App, m: &Match, theme: &Theme) -> Line<'static> {
             ))
         },
         |event| {
+            let minute = minute_text(event);
+            let prefix = if minute.is_empty() {
+                format!("{} ", event_icon(event.kind, app.icons()))
+            } else {
+                format!("{} {minute}", event_icon(event.kind, app.icons()))
+            };
             Line::from(vec![
                 Span::styled(
-                    format!(
-                        "{} {}",
-                        event_icon(event.kind, app.icons()),
-                        minute_text(event)
-                    ),
+                    prefix,
                     Style::new().fg(theme.accent).add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(
@@ -611,34 +655,14 @@ mod tests {
         assert!(cols * 2 + FLAG_GAP * 2 + score_w <= 70);
     }
 
-    #[test]
-    fn display_name_prefers_abbreviation_when_name_is_empty() {
-        assert_eq!(display_name("", "CAN", 20), "CAN");
-    }
-
-    #[test]
-    fn display_name_uses_full_name_when_it_fits() {
-        assert_eq!(display_name("Canada", "CAN", 20), "Canada");
-    }
-
-    #[test]
-    fn display_name_falls_back_to_abbreviation_when_too_long() {
-        assert_eq!(display_name("Switzerland", "SUI", 6), "SUI");
-    }
-
-    #[test]
-    fn display_name_keeps_name_when_no_abbreviation() {
-        assert_eq!(display_name("Switzerland", "", 6), "Switzerland");
-    }
-
     fn event_at(minute: u16, stoppage: Option<u16>) -> MatchEvent {
         MatchEvent {
             minute: Some(minute),
             stoppage,
             kind: MatchEventKind::Goal,
             team_id: None,
-            player: None,
-            detail: None,
+            player: Some("Scorer".to_owned()),
+            detail: Some("Goal".to_owned()),
         }
     }
 
@@ -665,6 +689,34 @@ mod tests {
     #[test]
     fn latest_event_is_none_for_empty() {
         assert!(latest_event(&[]).is_none());
+    }
+
+    #[test]
+    fn latest_event_skips_textless_events() {
+        let bare = MatchEvent {
+            minute: Some(80),
+            stoppage: None,
+            kind: MatchEventKind::Other,
+            team_id: None,
+            player: None,
+            detail: None,
+        };
+        let events = vec![event_at(20, None), bare];
+        // The bare minute-only event is ignored in favour of one with text.
+        assert_eq!(latest_event(&events).and_then(|e| e.minute), Some(20));
+    }
+
+    #[test]
+    fn score_mask_marks_filled_cells() {
+        let (mask, cols) = score_mask("1-0");
+        assert_eq!(cols, big_width("1-0"));
+        assert_eq!(mask.len(), usize::from(cols) * 5);
+        assert!(mask.iter().any(|&on| on));
+    }
+
+    #[test]
+    fn color_rgba_passes_through_rgb() {
+        assert_eq!(color_rgba(Color::Rgb(245, 203, 110)), [245, 203, 110, 255]);
     }
 
     #[test]

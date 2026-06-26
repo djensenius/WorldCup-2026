@@ -36,19 +36,19 @@ pub struct Cli {
     pub graphics: Option<String>,
 
     /// Enable Nerd Font glyphs for this run, overriding the config.
-    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_nerd_fonts")]
+    #[arg(long, visible_alias = "nerdfonts", action = ArgAction::SetTrue, conflicts_with = "no_nerd_fonts")]
     pub nerd_fonts: bool,
 
     /// Disable Nerd Font glyphs for this run, overriding the config.
-    #[arg(long, action = ArgAction::SetTrue)]
+    #[arg(long, visible_alias = "no-nerdfonts", action = ArgAction::SetTrue)]
     pub no_nerd_fonts: bool,
 
     /// Enable Live-card flags for this run, overriding the config.
-    #[arg(long, action = ArgAction::SetTrue, conflicts_with = "no_flags")]
+    #[arg(long, visible_alias = "flag", action = ArgAction::SetTrue, conflicts_with = "no_flags")]
     pub flags: bool,
 
     /// Disable Live-card flags for this run, overriding the config.
-    #[arg(long, action = ArgAction::SetTrue)]
+    #[arg(long, visible_alias = "no-flag", action = ArgAction::SetTrue)]
     pub no_flags: bool,
 
     /// Disable colours (use the terminal's default foreground only).

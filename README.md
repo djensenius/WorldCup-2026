@@ -91,6 +91,54 @@ config file. UI settings can also be overridden inline with flags such as
 `--timezone <local|utc|offset>`, and
 `--graphics <auto|kitty|iterm2|sixel|halfblocks|off>`.
 
+## Configuration
+
+WorldCup26 reads an optional TOML config file. If it does not exist, built-in
+defaults are used; pass `--config <path>` to use a specific file. The default
+location is the platform config directory:
+
+| Platform | Default path |
+| -------- | ------------ |
+| Linux    | `~/.config/worldcup26/config.toml` |
+| macOS    | `~/Library/Application Support/dev.djensenius.worldcup26/config.toml` |
+| Windows  | `%APPDATA%\djensenius\worldcup26\config\config.toml` |
+
+The full default configuration is:
+
+```toml
+favorites = []
+
+[provider]
+kind = "espn"
+
+[ui]
+theme = "world-night"
+nerd_fonts = false
+show_flags = true
+timezone = "local"
+```
+
+Fields:
+
+- `favorites` — teams (by display name or abbreviation, case-insensitive) to
+  pin and highlight. Toggle in-app with `f`.
+- `provider.kind` — data backend: `espn`, `api-football`, or `football-data`.
+- `provider.api_football_key` / `provider.football_data_key` — API credentials
+  for the paid providers (omitted by default). These can also be supplied via
+  the `WORLDCUP26_API_FOOTBALL_KEY` and `WORLDCUP26_FOOTBALL_DATA_KEY`
+  environment variables, which take precedence.
+- `ui.theme` — colour theme name (cycle in-app with `t`); see
+  [Keybindings](#keybindings).
+- `ui.nerd_fonts` — use Nerd Font glyphs for icons.
+- `ui.show_flags` — draw national flags on the Live card when the terminal
+  supports graphics.
+- `ui.timezone` — `"local"`, `"utc"`, or a fixed whole-hour offset from UTC as
+  an integer (e.g. `-4`).
+
+CLI flags such as `--provider`, `--theme`, `--timezone`, `--nerd-fonts` /
+`--no-nerd-fonts`, and `--flags` / `--no-flags` override the file for a single
+run without modifying it.
+
 ## Keybindings
 
 | Key                 | Action                                  |

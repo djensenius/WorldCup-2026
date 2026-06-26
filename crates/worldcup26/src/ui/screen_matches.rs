@@ -21,6 +21,10 @@ use crate::ui::icons::Icons;
 use crate::ui::screens::widgets;
 use crate::ui::theme::Theme;
 
+/// Lines of context kept above the selected match (its day/stage heading) when
+/// anchoring the selection near the top of the viewport.
+const SELECTION_LEAD: usize = 2;
+
 /// Render the matches screen.
 pub fn render(app: &App, frame: &mut Frame, area: Rect) {
     let theme = app.theme();
@@ -191,8 +195,13 @@ fn schedule_lines(
         ));
     }
 
+    // Anchor the selected match near the top of the viewport so scrolling up
+    // reveals previous games and down reveals upcoming ones. A small lead keeps
+    // the day/stage heading just above the selection visible.
     let available = height.max(1);
-    let start = selected_line.saturating_sub(available.saturating_sub(1));
+    let lead = SELECTION_LEAD.min(available.saturating_sub(1));
+    let max_start = all.len().saturating_sub(available);
+    let start = selected_line.saturating_sub(lead).min(max_start);
     all.into_iter().skip(start).take(available).collect()
 }
 
