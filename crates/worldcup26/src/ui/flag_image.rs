@@ -108,13 +108,20 @@ fn tmux_cell_size() -> Option<(u16, u16)> {
 
 /// Cell size in pixels from the `TIOCGWINSZ` ioctl on stdout. This reads the
 /// terminal's window size (no stdin interaction), dividing the pixel extent by
-/// the cell grid. Returns `None` when the terminal doesn't report pixels.
+/// the cell grid. Returns `None` when the terminal doesn't report pixels, or on
+/// platforms without the ioctl (Windows).
+#[cfg(unix)]
 fn winsize_cell_size() -> Option<(u16, u16)> {
     let ws = rustix::termios::tcgetwinsize(std::io::stdout()).ok()?;
     if ws.ws_xpixel == 0 || ws.ws_ypixel == 0 || ws.ws_col == 0 || ws.ws_row == 0 {
         return None;
     }
     Some((ws.ws_xpixel / ws.ws_col, ws.ws_ypixel / ws.ws_row))
+}
+
+#[cfg(not(unix))]
+fn winsize_cell_size() -> Option<(u16, u16)> {
+    None
 }
 
 fn parse_protocol(name: &str) -> Option<ProtocolType> {

@@ -31,7 +31,6 @@ ratatui = { workspace = true }
 ratatui-image = { workspace = true }
 resvg = { workspace = true }
 image = { workspace = true }
-rustix = { workspace = true }
 crossterm = { workspace = true }
 tokio = { workspace = true }
 futures = { workspace = true }
@@ -45,6 +44,11 @@ directories = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = { workspace = true }
+
+# Used only to read the terminal cell pixel size via the TIOCGWINSZ ioctl on
+# unix; not available (or needed) on Windows.
+[target.'cfg(unix)'.dependencies]
+rustix = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
