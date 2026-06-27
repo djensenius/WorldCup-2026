@@ -179,8 +179,9 @@ impl Config {
     /// # Errors
     /// Returns an error if no config directory can be determined.
     pub fn default_path() -> Result<PathBuf> {
+        let xdg_set = std::env::var_os("XDG_CONFIG_HOME").is_some_and(|v| !v.is_empty());
         if let Some(path) = xdg_config_path()
-            && (std::env::var_os("XDG_CONFIG_HOME").is_some() || path.exists())
+            && (xdg_set || path.exists())
         {
             return Ok(path);
         }
