@@ -6,6 +6,8 @@ Rust and [ratatui](https://ratatui.rs).
 
 > Status: under active development.
 
+![WorldCup26 Live card — national flags flanking a large block-digit score](docs/images/live.png)
+
 ## Features
 
 - **Matches** — fixtures by day and stage, status badges, local-timezone
@@ -29,6 +31,27 @@ Rust and [ratatui](https://ratatui.rs).
 - Pluggable **data providers** (ESPN by default; API-Football and
   football-data.org optional), nine colour themes (including Catppuccin and a
   Government of Canada palette), an offline cache, and mouse support.
+
+## Screenshots
+
+Shown with the `catppuccin-mocha` theme, Nerd Fonts, and flags enabled (see the
+[example config](#configuration)).
+
+![Matches screen — fixtures grouped by day and stage with kickoff times, venues, and favourite markers](docs/images/matches.png)
+
+*Matches — fixtures by day and stage, with status badges, venues, and favourite (★) markers.*
+
+![Live card — Croatia versus Ghana with national flags and a block-digit countdown clock](docs/images/live.png)
+
+*Live — a glanceable card with real national flags, a large block-digit score/clock, and a kickoff countdown.*
+
+![Standings screen — Group B table with played, win, draw, loss, goals, and points columns](docs/images/standings.png)
+
+*Standings — the 12 group tables (A–L) with qualification highlighting and favourite teams starred.*
+
+![Bracket screen — the knockout tree from Round of 32 through the Third place playoff](docs/images/bracket.png)
+
+*Bracket — the knockout tree from the Round of 32 to the Final.*
 
 ## Installation
 
@@ -100,8 +123,13 @@ location is the platform config directory:
 | Platform | Default path |
 | -------- | ------------ |
 | Linux    | `~/.config/worldcup26/config.toml` |
-| macOS    | `~/Library/Application Support/dev.djensenius.worldcup26/config.toml` |
+| macOS    | `~/.config/worldcup26/config.toml`, falling back to `~/Library/Application Support/dev.djensenius.worldcup26/config.toml` |
 | Windows  | `%APPDATA%\djensenius\worldcup26\config\config.toml` |
+
+If `XDG_CONFIG_HOME` is set, `$XDG_CONFIG_HOME/worldcup26/config.toml` takes
+precedence on every platform. On macOS, a file at
+`~/.config/worldcup26/config.toml` is used when present, otherwise the
+`~/Library/Application Support` path above is used.
 
 The full default configuration is:
 
@@ -114,6 +142,23 @@ kind = "espn"
 [ui]
 theme = "world-night"
 nerd_fonts = false
+show_flags = false
+timezone = "local"
+```
+
+An example with more features enabled — favourite teams, the Catppuccin Mocha
+theme, Nerd Font glyphs, and national flags on the Live card (this is the setup
+used for the [screenshots](#screenshots) above):
+
+```toml
+favorites = ["Canada", "Spain", "Argentina"]
+
+[provider]
+kind = "espn"
+
+[ui]
+theme = "catppuccin-mocha"
+nerd_fonts = true
 show_flags = true
 timezone = "local"
 ```
