@@ -179,10 +179,10 @@ impl Config {
     /// # Errors
     /// Returns an error if no config directory can be determined.
     pub fn default_path() -> Result<PathBuf> {
-        if let Some(path) = xdg_config_path() {
-            if std::env::var_os("XDG_CONFIG_HOME").is_some() || path.exists() {
-                return Ok(path);
-            }
+        if let Some(path) = xdg_config_path()
+            && (std::env::var_os("XDG_CONFIG_HOME").is_some() || path.exists())
+        {
+            return Ok(path);
         }
         let dirs = directories::ProjectDirs::from("dev", "djensenius", "worldcup26")
             .context("could not determine a config directory")?;
@@ -276,10 +276,10 @@ fn xdg_config_path_from(
     xdg_config_home: Option<std::ffi::OsString>,
     home: Option<PathBuf>,
 ) -> Option<PathBuf> {
-    if let Some(xdg) = xdg_config_home {
-        if !xdg.is_empty() {
-            return Some(PathBuf::from(xdg).join("worldcup26").join("config.toml"));
-        }
+    if let Some(xdg) = xdg_config_home
+        && !xdg.is_empty()
+    {
+        return Some(PathBuf::from(xdg).join("worldcup26").join("config.toml"));
     }
     home.map(|home| home.join(".config/worldcup26/config.toml"))
 }
