@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/djensenius/WorldCup-2026/compare/v0.3.1...v0.4.0) (2026-06-27)
+
+
+### Features
+
+* publish worldcup26 to the Homebrew tap ([#23](https://github.com/djensenius/WorldCup-2026/issues/23)) ([660cfc6](https://github.com/djensenius/WorldCup-2026/commit/660cfc6e1286306c54e833244569eda11e5bf315))
+
 ## [0.3.1](https://github.com/djensenius/WorldCup-2026/compare/v0.3.0...v0.3.1) (2026-06-27)
 
 
