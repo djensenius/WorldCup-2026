@@ -44,7 +44,7 @@ cast_possible_wrap = "allow"
 
 [workspace.dependencies]
 # Workspace crates
-wc-data = { version = "0.2.0", path = "crates/wc-data" }
+wc-data = { version = "0.3.0", path = "crates/wc-data" } # x-release-please-version
 
 # Serialization + errors
 serde = { version = "1", features = ["derive"] }
