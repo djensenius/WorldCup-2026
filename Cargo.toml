@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/wc-data", "crates/worldcup26"]
 
 [workspace.package]
-version = "0.3.1" # x-release-please-version
+version = "0.4.0" # x-release-please-version
 edition = "2024"
 rust-version = "1.95"
 license = "Apache-2.0"
@@ -44,7 +44,7 @@ cast_possible_wrap = "allow"
 
 [workspace.dependencies]
 # Workspace crates
-wc-data = { version = "0.3.1", path = "crates/wc-data" } # x-release-please-version
+wc-data = { version = "0.4.0", path = "crates/wc-data" } # x-release-please-version
 
 # Serialization + errors
 serde = { version = "1", features = ["derive"] }
