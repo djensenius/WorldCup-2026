@@ -546,6 +546,7 @@ mod tests {
             status,
             kickoff: OffsetDateTime::from_unix_timestamp(ts).unwrap_or(OffsetDateTime::UNIX_EPOCH),
             venue: None,
+            location: None,
         }
     }
 

@@ -442,6 +442,7 @@ mod tests {
                 },
                 kickoff: OffsetDateTime::UNIX_EPOCH,
                 venue: Some("Toronto".to_owned()),
+                location: Some("Toronto, Canada".to_owned()),
             },
             events: vec![MatchEvent {
                 minute: Some(12),

@@ -179,6 +179,8 @@ pub struct Match {
     pub kickoff: OffsetDateTime,
     /// Venue name, where available.
     pub venue: Option<String>,
+    /// Venue location (city and/or country), where available.
+    pub location: Option<String>,
 }
 
 /// One team's row in a group table.

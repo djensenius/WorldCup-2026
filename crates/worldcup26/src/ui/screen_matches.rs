@@ -248,7 +248,26 @@ fn match_row_line(
     ));
     spans.push(Span::styled("  ", row_style));
     spans.push(status_span(&m.status, theme, icons));
+    if let Some(place) = venue_label(m) {
+        spans.push(Span::styled(
+            format!("  {place}"),
+            Style::new().fg(theme.dim),
+        ));
+    }
     Line::from(spans)
+}
+
+/// Build the venue/location suffix shown on a match row, e.g.
+/// "BMO Field — Toronto, Canada". Either part may be missing.
+fn venue_label(m: &Match) -> Option<String> {
+    let venue = m.venue.as_deref().filter(|v| !v.is_empty());
+    let location = m.location.as_deref().filter(|v| !v.is_empty());
+    match (venue, location) {
+        (Some(venue), Some(location)) => Some(format!("{venue} — {location}")),
+        (Some(venue), None) => Some(venue.to_owned()),
+        (None, Some(location)) => Some(location.to_owned()),
+        (None, None) => None,
+    }
 }
 
 fn status_span(status: &MatchStatus, theme: &Theme, icons: Icons) -> Span<'static> {
@@ -348,6 +367,7 @@ mod tests {
             status,
             kickoff: OffsetDateTime::UNIX_EPOCH,
             venue: Some("Toronto".to_owned()),
+            location: Some("Toronto, Canada".to_owned()),
         }
     }
 

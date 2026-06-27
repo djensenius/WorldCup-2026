@@ -280,7 +280,11 @@ impl ApiFixture {
             score,
             status,
             kickoff,
-            venue: self.fixture.venue.and_then(|v| v.name),
+            venue: self.fixture.venue.as_ref().and_then(|v| v.name.clone()),
+            location: self
+                .fixture
+                .venue
+                .and_then(|v| v.city.filter(|s| !s.is_empty())),
         })
     }
 }
@@ -320,6 +324,7 @@ struct ApiStatus {
 #[derive(Debug, Deserialize)]
 struct ApiVenue {
     name: Option<String>,
+    city: Option<String>,
 }
 #[derive(Debug, Deserialize)]
 struct ApiLeague {
