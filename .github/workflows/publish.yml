@@ -321,11 +321,17 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
             echo "::warning::HOMEBREW_TAP_TOKEN is not set; skipping Homebrew formula bump."
           fi
+      - name: Checkout tap
+        if: ${{ steps.token.outputs.present == 'true' }}
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: djensenius/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: tap
       - name: Update formula in djensenius/homebrew-tap
         if: ${{ steps.token.outputs.present == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           TAG: ${{ needs.resolve.outputs.tag }}
           REPO: ${{ github.repository }}
         run: |
@@ -343,7 +349,6 @@ jobs:
           intel_sha="$(sha256sum "$intel_asset" | cut -d' ' -f1)"
           echo "version=$version arm_sha=$arm_sha intel_sha=$intel_sha"
 
-          git clone "https://x-access-token:${TAP_TOKEN}@github.com/djensenius/homebrew-tap.git" tap
           formula="tap/Formula/worldcup26.rb"
           # The formula is fully machine-managed; regenerate it deterministically.
           cat > "$formula" <<RUBY
@@ -381,14 +386,15 @@ jobs:
           RUBY
 
           cd tap
-          if git diff --quiet; then
+          git add -A
+          if git diff --cached --quiet; then
             echo "Formula already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "worldcup26 ${version}"
-          git push origin main
+          git commit -m "worldcup26 ${version}"
+          git push
 
   publish-apt:
     name: publish APT repo (optional gh-pages)
