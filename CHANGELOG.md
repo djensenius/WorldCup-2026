@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/djensenius/WorldCup-2026/compare/v0.2.4...v0.3.0) (2026-06-27)
+
+
+### Features
+
+* show match venue location on the Matches list ([#18](https://github.com/djensenius/WorldCup-2026/issues/18)) ([a555cf6](https://github.com/djensenius/WorldCup-2026/commit/a555cf63edf7ef0d6ce92e569c5070e59b9f4740))
+
+
+### Bug Fixes
+
+* resolve config under XDG/~/.config and default flags off ([#19](https://github.com/djensenius/WorldCup-2026/issues/19)) ([4c20aa4](https://github.com/djensenius/WorldCup-2026/commit/4c20aa4fc8203da07f5a28baef1dfdd6d987f911))
+
 ## [0.2.4](https://github.com/djensenius/WorldCup-2026/compare/v0.2.3...v0.2.4) (2026-06-27)
 
 
