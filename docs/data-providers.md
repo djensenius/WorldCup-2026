@@ -57,11 +57,13 @@ committing keys anywhere.
 
 ## Configuration
 
-Configuration is TOML stored in the platform configuration directory (resolved
-via `ProjectDirs` for `dev.djensenius.worldcup26`):
+Configuration is TOML. The path is resolved in this order on every platform:
+`$XDG_CONFIG_HOME/worldcup26/config.toml` (when `XDG_CONFIG_HOME` is set), then
+`~/.config/worldcup26/config.toml` (when it exists), then the platform default
+via `ProjectDirs` for `dev.djensenius.worldcup26`:
 
 - **Linux** — `~/.config/worldcup26/config.toml`
-- **macOS** — `~/Library/Application Support/dev.djensenius.worldcup26/config.toml`
+- **macOS** — `~/.config/worldcup26/config.toml`, else `~/Library/Application Support/dev.djensenius.worldcup26/config.toml`
 - **Windows** — `%APPDATA%\djensenius\worldcup26\config\config.toml`
 
 Point at an alternate file with `worldcup26 --config <FILE>`. Common UI settings
@@ -96,7 +98,7 @@ nerd_fonts = false
 # Matches/Standings/Team/Bracket stay text-only. Toggle at runtime with `f`.
 # Graphics support is auto-detected; force it with --graphics or the
 # WORLDCUP26_GRAPHICS env var (auto|kitty|iterm2|sixel|halfblocks|off).
-show_flags = true
+show_flags = false
 # Kickoff display: "local" (default) or "utc". A fixed whole-hour offset
 # from UTC is also supported.
 timezone = "local"
