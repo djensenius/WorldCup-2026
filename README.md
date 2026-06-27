@@ -57,6 +57,20 @@ Shown with the `catppuccin-mocha` theme, Nerd Fonts, and flags enabled (see the
 
 The crates.io package is named `worldcup26`; it installs the `worldcup26` command.
 
+### Homebrew (macOS)
+
+On macOS (Apple Silicon or Intel), install from the
+[`djensenius/tap`](https://github.com/djensenius/homebrew-tap) tap — no Rust
+toolchain required:
+
+```sh
+brew install djensenius/tap/worldcup26
+worldcup26
+```
+
+This also installs the man page (`man worldcup26`) and shell completions for
+bash, zsh, and fish. Upgrade later with `brew upgrade worldcup26`.
+
 ### Requirements
 
 - Rust **1.95.0 or newer** with Cargo. Install it with
