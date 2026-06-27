@@ -159,7 +159,7 @@ impl Default for UiSettings {
         Self {
             theme: "world-night".to_owned(),
             nerd_fonts: false,
-            show_flags: true,
+            show_flags: false,
             timezone: TimezonePref::default(),
         }
     }
@@ -168,9 +168,23 @@ impl Default for UiSettings {
 impl Config {
     /// The default config file path for this platform.
     ///
+    /// Resolution order:
+    /// 1. `$XDG_CONFIG_HOME/worldcup26/config.toml` when `XDG_CONFIG_HOME` is set.
+    /// 2. `~/.config/worldcup26/config.toml` when that file already exists.
+    /// 3. The platform default directory (e.g. `~/Library/Application Support`
+    ///    on macOS).
+    ///
+    /// This lets macOS users keep their config under `~/.config` like on Linux.
+    ///
     /// # Errors
     /// Returns an error if no config directory can be determined.
     pub fn default_path() -> Result<PathBuf> {
+        let xdg_set = std::env::var_os("XDG_CONFIG_HOME").is_some_and(|v| !v.is_empty());
+        if let Some(path) = xdg_config_path()
+            && (xdg_set || path.exists())
+        {
+            return Ok(path);
+        }
         let dirs = directories::ProjectDirs::from("dev", "djensenius", "worldcup26")
             .context("could not determine a config directory")?;
         Ok(dirs.config_dir().join("config.toml"))
@@ -250,6 +264,27 @@ impl Config {
     }
 }
 
+/// The XDG-style config path (`$XDG_CONFIG_HOME/worldcup26/config.toml`, or
+/// `~/.config/worldcup26/config.toml` otherwise), regardless of platform.
+fn xdg_config_path() -> Option<PathBuf> {
+    let home = directories::BaseDirs::new().map(|dirs| dirs.home_dir().to_path_buf());
+    xdg_config_path_from(std::env::var_os("XDG_CONFIG_HOME"), home)
+}
+
+/// Pure resolver for [`xdg_config_path`], parameterised over the
+/// `XDG_CONFIG_HOME` value and the home directory so it can be unit-tested.
+fn xdg_config_path_from(
+    xdg_config_home: Option<std::ffi::OsString>,
+    home: Option<PathBuf>,
+) -> Option<PathBuf> {
+    if let Some(xdg) = xdg_config_home
+        && !xdg.is_empty()
+    {
+        return Some(PathBuf::from(xdg).join("worldcup26").join("config.toml"));
+    }
+    home.map(|home| home.join(".config/worldcup26/config.toml"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -305,5 +340,35 @@ mod tests {
         cfg.ui.timezone = TimezonePref::Utc;
         let text = to_toml(&cfg);
         assert!(text.contains("timezone = \"utc\""), "got:\n{text}");
+    }
+
+    #[test]
+    fn xdg_path_prefers_explicit_config_home() {
+        let path = xdg_config_path_from(
+            Some(std::ffi::OsString::from("/tmp/xdg")),
+            Some(PathBuf::from("/home/user")),
+        );
+        assert_eq!(path, Some(PathBuf::from("/tmp/xdg/worldcup26/config.toml")));
+    }
+
+    #[test]
+    fn xdg_path_falls_back_to_dot_config_in_home() {
+        let path = xdg_config_path_from(None, Some(PathBuf::from("/home/user")));
+        assert_eq!(
+            path,
+            Some(PathBuf::from("/home/user/.config/worldcup26/config.toml"))
+        );
+    }
+
+    #[test]
+    fn xdg_path_ignores_empty_config_home() {
+        let path = xdg_config_path_from(
+            Some(std::ffi::OsString::new()),
+            Some(PathBuf::from("/home/user")),
+        );
+        assert_eq!(
+            path,
+            Some(PathBuf::from("/home/user/.config/worldcup26/config.toml"))
+        );
     }
 }
