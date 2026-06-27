@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.4](https://github.com/djensenius/WorldCup-2026/compare/v0.2.3...v0.2.4) (2026-06-27)
+
+
+### Bug Fixes
+
+* add screenshots and an advanced config example to the README ([#17](https://github.com/djensenius/WorldCup-2026/issues/17)) ([abba082](https://github.com/djensenius/WorldCup-2026/commit/abba0825c3b2b4eb610783ad4a51e36ab6437fff))
+* sync workspace lockfile during publish so crates.io release succeeds ([#15](https://github.com/djensenius/WorldCup-2026/issues/15)) ([1ae429c](https://github.com/djensenius/WorldCup-2026/commit/1ae429ccbfffadd0fd473e4dbdd7354b0a640164))
+
 ## [0.2.3](https://github.com/djensenius/WorldCup-2026/compare/v0.2.2...v0.2.3) (2026-06-26)
 
 
