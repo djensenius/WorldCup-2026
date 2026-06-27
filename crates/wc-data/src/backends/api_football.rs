@@ -236,6 +236,10 @@ struct ApiFixture {
 impl ApiFixture {
     fn into_match(self, calendar: &Calendar) -> Result<Match> {
         let kickoff = parse_time(&self.fixture.date)?;
+        let (venue, location) = match self.fixture.venue {
+            Some(v) => (v.name, v.city.filter(|s| !s.is_empty())),
+            None => (None, None),
+        };
         let status = api_status(
             &self.fixture.status.short,
             self.fixture.status.elapsed,
@@ -280,11 +284,8 @@ impl ApiFixture {
             score,
             status,
             kickoff,
-            venue: self.fixture.venue.as_ref().and_then(|v| v.name.clone()),
-            location: self
-                .fixture
-                .venue
-                .and_then(|v| v.city.filter(|s| !s.is_empty())),
+            venue,
+            location,
         })
     }
 }
