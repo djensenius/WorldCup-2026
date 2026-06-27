@@ -378,6 +378,39 @@ mod tests {
     }
 
     #[test]
+    fn venue_label_combines_venue_and_location() {
+        let m = fixture(MatchStatus::Scheduled, None);
+        assert_eq!(
+            venue_label(&m).as_deref(),
+            Some("Toronto — Toronto, Canada")
+        );
+    }
+
+    #[test]
+    fn venue_label_uses_each_part_when_only_one_present() {
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.location = None;
+        assert_eq!(venue_label(&m).as_deref(), Some("Toronto"));
+
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.venue = None;
+        assert_eq!(venue_label(&m).as_deref(), Some("Toronto, Canada"));
+    }
+
+    #[test]
+    fn venue_label_is_none_when_missing_or_empty() {
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.venue = None;
+        m.location = None;
+        assert_eq!(venue_label(&m), None);
+
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.venue = Some(String::new());
+        m.location = Some(String::new());
+        assert_eq!(venue_label(&m), None);
+    }
+
+    #[test]
     fn live_badge_shows_minute() {
         let theme = Theme::world_night();
         let icons = Icons::new(false);
