@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/djensenius/WorldCup-2026/compare/v0.3.0...v0.3.1) (2026-06-27)
+
+
+### Bug Fixes
+
+* track internal wc-data dependency version in releases ([#21](https://github.com/djensenius/WorldCup-2026/issues/21)) ([2466e9b](https://github.com/djensenius/WorldCup-2026/commit/2466e9b632e7046a96b4409aeeb1fa263eb929a6))
+
 ## [0.3.0](https://github.com/djensenius/WorldCup-2026/compare/v0.2.4...v0.3.0) (2026-06-27)
 
 
