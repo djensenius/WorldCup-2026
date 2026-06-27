@@ -223,6 +223,7 @@ impl FdMatch {
             status,
             kickoff,
             venue: None,
+            location: None,
         })
     }
 

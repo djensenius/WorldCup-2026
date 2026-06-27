@@ -377,6 +377,7 @@ mod tests {
             status: MatchStatus::Scheduled,
             kickoff: OffsetDateTime::UNIX_EPOCH,
             venue: None,
+            location: None,
         }
     }
 

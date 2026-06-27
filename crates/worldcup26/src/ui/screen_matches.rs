@@ -248,7 +248,26 @@ fn match_row_line(
     ));
     spans.push(Span::styled("  ", row_style));
     spans.push(status_span(&m.status, theme, icons));
+    if let Some(place) = venue_label(m) {
+        spans.push(Span::styled(
+            format!("  {place}"),
+            Style::new().fg(theme.dim),
+        ));
+    }
     Line::from(spans)
+}
+
+/// Build the venue/location suffix shown on a match row, e.g.
+/// "BMO Field — Toronto, Canada". Either part may be missing.
+fn venue_label(m: &Match) -> Option<String> {
+    let venue = m.venue.as_deref().filter(|v| !v.is_empty());
+    let location = m.location.as_deref().filter(|v| !v.is_empty());
+    match (venue, location) {
+        (Some(venue), Some(location)) => Some(format!("{venue} — {location}")),
+        (Some(venue), None) => Some(venue.to_owned()),
+        (None, Some(location)) => Some(location.to_owned()),
+        (None, None) => None,
+    }
 }
 
 fn status_span(status: &MatchStatus, theme: &Theme, icons: Icons) -> Span<'static> {
@@ -348,6 +367,7 @@ mod tests {
             status,
             kickoff: OffsetDateTime::UNIX_EPOCH,
             venue: Some("Toronto".to_owned()),
+            location: Some("Toronto, Canada".to_owned()),
         }
     }
 
@@ -355,6 +375,39 @@ mod tests {
     fn scheduled_match_uses_vs() {
         let m = fixture(MatchStatus::Scheduled, None);
         assert_eq!(score_text(&m), "vs");
+    }
+
+    #[test]
+    fn venue_label_combines_venue_and_location() {
+        let m = fixture(MatchStatus::Scheduled, None);
+        assert_eq!(
+            venue_label(&m).as_deref(),
+            Some("Toronto — Toronto, Canada")
+        );
+    }
+
+    #[test]
+    fn venue_label_uses_each_part_when_only_one_present() {
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.location = None;
+        assert_eq!(venue_label(&m).as_deref(), Some("Toronto"));
+
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.venue = None;
+        assert_eq!(venue_label(&m).as_deref(), Some("Toronto, Canada"));
+    }
+
+    #[test]
+    fn venue_label_is_none_when_missing_or_empty() {
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.venue = None;
+        m.location = None;
+        assert_eq!(venue_label(&m), None);
+
+        let mut m = fixture(MatchStatus::Scheduled, None);
+        m.venue = Some(String::new());
+        m.location = Some(String::new());
+        assert_eq!(venue_label(&m), None);
     }
 
     #[test]

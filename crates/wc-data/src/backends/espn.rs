@@ -237,6 +237,9 @@ impl EspnEvent {
             venue: competition
                 .and_then(|c| c.venue.as_ref())
                 .and_then(|v| v.full_name.clone()),
+            location: competition
+                .and_then(|c| c.venue.as_ref())
+                .and_then(EspnVenue::location),
         })
     }
 }
@@ -344,6 +347,30 @@ struct EspnLogo {
 #[serde(rename_all = "camelCase")]
 struct EspnVenue {
     full_name: Option<String>,
+    address: Option<EspnVenueAddress>,
+}
+
+impl EspnVenue {
+    /// Combine the venue's city and country into a single "City, Country"
+    /// string, returning whichever parts are present.
+    fn location(&self) -> Option<String> {
+        let address = self.address.as_ref()?;
+        let city = address.city.as_deref().filter(|s| !s.is_empty());
+        let country = address.country.as_deref().filter(|s| !s.is_empty());
+        match (city, country) {
+            (Some(city), Some(country)) => Some(format!("{city}, {country}")),
+            (Some(city), None) => Some(city.to_owned()),
+            (None, Some(country)) => Some(country.to_owned()),
+            (None, None) => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EspnVenueAddress {
+    city: Option<String>,
+    country: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -776,6 +803,8 @@ mod tests {
         assert_eq!(matches[0].home.name, "Canada");
         assert!(matches[0].status.is_live());
         assert_eq!(matches[0].group.as_deref(), Some("B"));
+        assert_eq!(matches[0].venue.as_deref(), Some("BMO Field"));
+        assert_eq!(matches[0].location.as_deref(), Some("Toronto, Canada"));
         Ok(())
     }
 
